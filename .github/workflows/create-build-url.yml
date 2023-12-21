@@ -83,9 +83,10 @@ jobs:
                   - Download QuickWP - [Download](https://verti-artifacts.s3.amazonaws.com/${{ github.event.pull_request.base.repo.name }}-${{ needs.dev-zip.outputs.branch-name }}-${{ needs.dev-zip.outputs.git-sha-8 }}/quickwp.zip)"
                   body="${body//$'\n'/'%0A'}"
                   echo "::set-output name=body::$body"
+
             - name: Create comment on PR with links to plugin builds
               if: ${{ steps.find-comment.outputs.comment-id == '' }}
-              uses: peter-evans/create-or-update-comment@v2
+              uses: peter-evans/create-or-update-comment@v3
               with:
                   issue-number: ${{ steps.get-pr-number.outputs.num }}
                   token: ${{ secrets.BOT_TOKEN }}
@@ -93,7 +94,7 @@ jobs:
 
             - name: Update comment on PR with links to plugin builds
               if: ${{ steps.find-comment.outputs.comment-id != '' }}
-              uses: peter-evans/create-or-update-comment@v2
+              uses: peter-evans/create-or-update-comment@v3
               with:
                   comment-id: ${{ steps.find-comment.outputs.comment-id }}
                   edit-mode: replace
