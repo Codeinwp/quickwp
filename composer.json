@@ -4,7 +4,9 @@
 	"type": "wordpress-plugin",
 	"license": "GPL-v3-or-later",
 	"autoload": {
-		"classmap": ["inc/"]
+		"classmap": [
+			"inc/"
+		]
 	},
 	"authors": [
 		{

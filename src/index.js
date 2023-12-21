@@ -11,10 +11,7 @@ import { registerPlugin } from '@wordpress/plugins';
 import App from './App';
 
 const Render = () => {
-	return createPortal(
-		<App />,
-		document.body
-	);
+	return createPortal( <App />, document.body );
 };
 
 // Check the URL for the quickwp query string.
@@ -24,6 +21,6 @@ const hasFlag = urlParams.get( 'quickwp' );
 // If the quickwp query string is present, render the quickwp modal.
 if ( 'true' === hasFlag ) {
 	registerPlugin( 'quickwp', {
-		render: Render
-	});
+		render: Render,
+	} );
 }
