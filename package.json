@@ -15,7 +15,8 @@
 		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start",
 		"test:e2e": "wp-scripts test-e2e",
-		"test:unit": "wp-scripts test-unit-js"
+		"test:unit": "wp-scripts test-unit-js",
+		"dist": "bash bin/dist.sh"
 	},
 	"repository": {
 		"type": "git",
