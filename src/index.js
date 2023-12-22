@@ -8,6 +8,7 @@ import { registerPlugin } from '@wordpress/plugins';
 /**
  * Internal dependencies.
  */
+import './style.scss';
 import App from './App';
 
 const Render = () => {

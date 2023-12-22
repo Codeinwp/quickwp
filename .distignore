@@ -17,6 +17,8 @@ composer.lock
 package-lock.json
 themeisle-hash.json
 npm-debug.log
+phpstan.neon
+tailwind.config.js
 /grunt
 /node_modules
 /logs
