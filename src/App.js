@@ -1,8 +1,6 @@
 /**
  * WordPress dependencies.
  */
-import { Modal } from '@wordpress/components';
-
 const App = () => {
 	return (
 		<div className="fixed z-50 bg-black overflow-auto inset-0">

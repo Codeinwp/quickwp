@@ -34,6 +34,6 @@
 		"tailwindcss": "^3.4.0"
 	},
 	"simple-git-hooks": {
-	  "pre-commit": "npm run lint:js && compose run-script lint && composer run-script phpstan"
+		"pre-commit": "npm run lint:js && composer run-script lint && composer run-script phpstan"
 	}
 }
