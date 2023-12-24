@@ -9,6 +9,7 @@ import { registerPlugin } from '@wordpress/plugins';
  * Internal dependencies.
  */
 import './style.scss';
+import './store';
 import App from './App';
 
 const Render = () => {
@@ -22,6 +23,6 @@ const hasFlag = urlParams.get( 'quickwp' );
 // If the quickwp query string is present, render the quickwp modal.
 if ( 'true' === hasFlag ) {
 	registerPlugin( 'quickwp', {
-		render: Render,
-	} );
+		render: Render
+	});
 }

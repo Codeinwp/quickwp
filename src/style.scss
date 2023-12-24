@@ -1,2 +1,38 @@
+@import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+
+#quickwp {
+	--wp-admin-theme-color: #ffffff;
+
+	.components-text-control__input {
+		@apply bg-transparent max-w-xl border-0 h-12 text-2xl not-italic font-normal text-fg shadow-none;
+	}
+
+	.components-textarea-control__input {
+		@apply bg-transparent max-w-5xl h-24 border-0 text-2xl not-italic font-normal text-fg shadow-none resize-none;
+	}
+
+	.components-text-control__input::placeholder,
+	.components-textarea-control__input::placeholder {
+		@apply text-fg/50 shadow-none;
+	}
+
+	.components-button {
+		&.is-primary {
+			@apply bg-transparent w-fit h-auto border border-solid border-fg text-fg rounded-md px-6 py-4 transition-all text-lg not-italic font-medium;
+
+			&:disabled {
+				@apply opacity-50;
+			}
+		}
+	}
+
+	.block-editor-block-preview__content {
+		max-height: none !important;
+
+		iframe {
+			max-height: none !important;
+		}
+	}
+}
