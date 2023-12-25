@@ -38,6 +38,7 @@
 		"pre-commit": "npm run lint:js && composer run-script lint && composer run-script phpstan"
 	},
 	"dependencies": {
+		"@wordpress/icons": "^9.39.0",
 		"classnames": "^2.3.2"
 	}
 }

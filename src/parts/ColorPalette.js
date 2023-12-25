@@ -3,11 +3,21 @@
  */
 import { __ } from '@wordpress/i18n';
 
-import { BlockPreview } from '@wordpress/block-editor';
+import {
+	Button,
+	ColorIndicator,
+	TextControl
+} from '@wordpress/components';
 
-import { Button, ColorIndicator, TextControl } from '@wordpress/components';
+import {
+	useDispatch,
+	useSelect
+} from '@wordpress/data';
 
-import { useDispatch, useSelect } from '@wordpress/data';
+/**
+ * Internal dependencies.
+ */
+import TemplatePreview from '../components/TemplatePreview';
 
 const palette = [
 	{
@@ -97,9 +107,7 @@ const ColorPalette = () => {
 				</Button>
 			</div>
 
-			<div className="block basis-full overflow-scroll max-h-80vh rounded-2xl">
-				<BlockPreview blocks={ template } viewportWidth={ 1400 } />
-			</div>
+			<TemplatePreview template={ template } />
 		</div>
 	);
 };

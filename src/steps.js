@@ -9,6 +9,9 @@ import { __ } from '@wordpress/i18n';
 import SiteTopic from './parts/SiteTopic';
 import SiteDescription from './parts/SiteDescription';
 import ColorPalette from './parts/ColorPalette';
+import ImageSuggestions from './parts/ImageSuggestions';
+import Template from './parts/Template';
+import ViewSite from './parts/ViewSite';
 
 const STEPS = [
 	{
@@ -28,15 +31,18 @@ const STEPS = [
 	},
 	{
 		value: 'image_suggestions',
-		label: __( 'Image Suggestions', 'quickwp' )
+		label: __( 'Image Suggestions', 'quickwp' ),
+		view: ImageSuggestions
 	},
 	{
 		value: 'frontpage_template',
-		label: __( 'Front Page Template', 'quickwp' )
+		label: __( 'Front Page Template', 'quickwp' ),
+		view: Template
 	},
 	{
 		value: 'view_site',
-		label: __( 'View Site', 'quickwp' )
+		label: __( 'View Site', 'quickwp' ),
+		view: ViewSite
 	}
 ];
 

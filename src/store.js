@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { createReduxStore, dispatch, register, select } from '@wordpress/data';
+import { createReduxStore, register } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -9,7 +9,7 @@ import { createReduxStore, dispatch, register, select } from '@wordpress/data';
 import STEPS from './steps';
 
 const DEFAULT_STATE = {
-	step: 2
+	step: 0
 };
 
 const actions = {
