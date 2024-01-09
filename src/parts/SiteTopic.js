@@ -15,11 +15,6 @@ import {
 
 import { ENTER } from '@wordpress/keycodes';
 
-/**
- * Internal dependencies.
- */
-import { generateColorPalette } from '../utils';
-
 const SiteTopic = () => {
 	const { siteTopic } = useSelect( select => {
 		return {
@@ -37,8 +32,6 @@ const SiteTopic = () => {
 			return;
 		}
 
-		// At this point, we start the color palette generation process.
-		generateColorPalette();
 		onContinue();
 	};
 

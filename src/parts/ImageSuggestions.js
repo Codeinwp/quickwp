@@ -12,7 +12,8 @@ import { __ } from '@wordpress/i18n';
 
 import {
 	Button,
-	Icon
+	Icon,
+	Spinner
 } from '@wordpress/components';
 
 import {
@@ -25,15 +26,32 @@ import { useState } from '@wordpress/element';
 const ImageSuggestions = () => {
 	const [ value, setValue ] = useState([]);
 
-	const { images } = useSelect( select => {
-		const images = select( 'quickwp/data' ).getImages() || [];
+	const {
+		images,
+		hasLoaded
+	} = useSelect( select => {
+		const {
+			getImages,
+			getProcessStatus
+		} = select( 'quickwp/data' );
+
+		const images = getImages() || [];
 
 		return {
-			images: images.slice( 0, 9 )
+			images: images.slice( 0, 9 ),
+			hasLoaded: true === getProcessStatus( 'images' )
 		};
 	});
 
 	const { onContinue } = useDispatch( 'quickwp/data' );
+
+	if ( ! hasLoaded ) {
+		return (
+			<div className="flex flex-1 flex-row items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-1 flex-row gap-8 items-center">

@@ -13,11 +13,6 @@ import {
 	useSelect
 } from '@wordpress/data';
 
-/**
- * Internal dependencies.
- */
-import { generateImages } from '../utils';
-
 const SiteDescription = () => {
 	const { siteDescription } = useSelect( select => {
 		return {
@@ -34,8 +29,6 @@ const SiteDescription = () => {
 		if ( 4 > siteDescription?.length ) {
 			return;
 		}
-
-		generateImages();
 
 		onContinue();
 	};

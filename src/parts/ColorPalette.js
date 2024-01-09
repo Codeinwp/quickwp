@@ -5,7 +5,8 @@ import { __ } from '@wordpress/i18n';
 
 import {
 	Button,
-	ColorIndicator
+	ColorIndicator,
+	Spinner
 } from '@wordpress/components';
 
 import {
@@ -23,20 +24,34 @@ const ColorPalette = () => {
 
 	const {
 		palette,
-		template
+		template,
+		hasLoaded
 	} = useSelect( ( select ) => {
 		const { getBlocks } = select( 'core/block-editor' );
-		const { getColorPalette } = select( 'quickwp/data' );
+
+		const {
+			getColorPalette,
+			getProcessStatus
+		} = select( 'quickwp/data' );
 
 		return {
 			palette: getColorPalette(),
-			template: getBlocks()
+			template: getBlocks(),
+			hasLoaded: true === getProcessStatus( 'color_palette' )
 		};
 	});
 
 	const onSubmit = async() => {
 		onContinue();
 	};
+
+	if ( ! hasLoaded ) {
+		return (
+			<div className="flex flex-1 flex-row items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-1 flex-row gap-8 items-center">

@@ -1,21 +1,16 @@
 /**
  * WordPress dependencies.
  */
-import apiFetch from '@wordpress/api-fetch';
-
 import {
 	createReduxStore,
-	dispatch,
-	register,
-	select
+	register
 } from '@wordpress/data';
-
-import { addQueryArgs } from '@wordpress/url';
 
 /**
  * Internal dependencies.
  */
 import STEPS from './steps';
+import { generateColorPalette, generateImages } from './utils';
 
 const DEFAULT_STATE = {
 	step: 0,
@@ -75,7 +70,18 @@ const actions = {
 		};
 	},
 	onContinue() {
-		return ({ dispatch }) => {
+		return ({ dispatch, select }) => {
+			const current = select.getStep();
+
+			switch ( current.value ) {
+			case 'site_topic':
+				generateColorPalette();
+				break;
+			case 'color_palette':
+				generateImages();
+				break;
+			}
+
 			dispatch( actions.nextStep() );
 		};
 	},

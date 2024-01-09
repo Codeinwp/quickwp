@@ -8,7 +8,12 @@ import {
 	select
 } from '@wordpress/data';
 
-import { SVG, Circle, G, Path } from '@wordpress/primitives';
+import {
+	Circle,
+	G,
+	Path,
+	SVG
+} from '@wordpress/primitives';
 
 import { addQueryArgs } from '@wordpress/url';
 
@@ -196,10 +201,7 @@ export const generateColorPalette = async() => {
 export const generateImages = async() => {
 	const siteDescription = select( 'quickwp/data' ).getSiteDescription();
 
-	const {
-		setImages,
-		setProcessStatus
-	} = dispatch( 'quickwp/data' );
+	const { setProcessStatus } = dispatch( 'quickwp/data' );
 
 	await sendEvent({
 		step: 'images',
