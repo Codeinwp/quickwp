@@ -15,24 +15,23 @@ import {
 	Icon
 } from '@wordpress/components';
 
-import { useDispatch } from '@wordpress/data';
+import {
+	useDispatch,
+	useSelect
+} from '@wordpress/data';
 
 import { useState } from '@wordpress/element';
 
-const dummy = [
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52172949534_aa8893fd8f_c.jpg?v=1',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52171667257_e4c90f0a38_c.jpg?v=2',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52172949534_aa8893fd8f_c.jpg?v=3',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52172949534_aa8893fd8f_c.jpg?v=4',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52172949534_aa8893fd8f_c.jpg?v=5',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52171667257_e4c90f0a38_c.jpg?v=6',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52171667257_e4c90f0a38_c.jpg?v=7',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52172949534_aa8893fd8f_c.jpg?v=8',
-	'https://mystock.themeisle.com/wp-content/uploads/2022/06/52171667257_e4c90f0a38_c.jpg?v=9'
-];
-
 const ImageSuggestions = () => {
 	const [ value, setValue ] = useState([]);
+
+	const { images } = useSelect( select => {
+		const images = select( 'quickwp/data' ).getImages() || [];
+
+		return {
+			images: images.slice( 0, 9 )
+		};
+	});
 
 	const { onContinue } = useDispatch( 'quickwp/data' );
 
@@ -53,24 +52,24 @@ const ImageSuggestions = () => {
 
 			<div className="block basis-full overflow-scroll max-h-80vh">
 				<div className="grid grid-cols-3 gap-4 p-1">
-					{ dummy.map( ( image, index ) => (
+					{ images.map( ( image, index ) => (
 						<div
-							key={ index }
+							key={ image.id }
 							className={ classNames(
 								'flex flex-1 cursor-pointer',
 								{
-									'outline outline-offset-2 outline-2 outline-white grayscale': value.includes( image )
+									'outline outline-offset-2 outline-2 outline-white grayscale': value.includes( image.id )
 								}
 							) }
 							onClick={ () => {
-								if ( value.includes( image ) ) {
-									setValue( value.filter( ( item ) => item !== image ) );
+								if ( value.includes( image.id ) ) {
+									setValue( value.filter( ( item ) => item !== image.id ) );
 								} else {
-									setValue([ ...value, image ]);
+									setValue([ ...value, image.id ]);
 								}
 							}}
 						>
-							{ value.includes( image ) && (
+							{ value.includes( image.id ) && (
 								<div className="bg-white w-8 h-8 absolute flex justify-center items-center shadow-selected -right-1 -top-1 z-10">
 									<Icon
 										icon={ check }
@@ -81,7 +80,7 @@ const ImageSuggestions = () => {
 
 							<img
 								className="object-cover aspect-square"
-								src={ image }
+								src={ image.src.original }
 							/>
 						</div>
 					) ) }

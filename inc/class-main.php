@@ -7,16 +7,26 @@
 
 namespace ThemeIsle\QuickWP;
 
+use ThemeIsle\QuickWP\API;
+
 /**
  * Main class.
  */
 class Main {
+	/**
+	 * API instance.
+	 *
+	 * @var API
+	 */
+	private $api;
 
 	/**
 	 * Constructor.
 	 */
 	public function __construct() {
 		$this->register_hooks();
+
+		$this->api = new API();
 	}
 
 	/**
@@ -62,5 +72,13 @@ class Main {
 		);
 
 		wp_set_script_translations( 'quickwp', 'quickwp' );
+
+		wp_localize_script(
+			'quickwp',
+			'quickwp',
+			array(
+				'api' => $this->api->get_endpoint(),
+			)
+		);
 	}
 }

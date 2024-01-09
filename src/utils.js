@@ -1,7 +1,16 @@
 /**
  * WordPress dependencies
  */
+import apiFetch from '@wordpress/api-fetch';
+
+import {
+	dispatch,
+	select
+} from '@wordpress/data';
+
 import { SVG, Circle, G, Path } from '@wordpress/primitives';
+
+import { addQueryArgs } from '@wordpress/url';
 
 export const PageControlIcon = ({ isFilled = false }) => {
 	return (
@@ -49,4 +58,159 @@ export const Logo = () => {
 			</G>
 		</SVG>
 	);
+};
+
+const sendEvent = async( data ) => {
+	const {
+		setRunID,
+		setThreadID
+	} = dispatch( 'quickwp/data' );
+
+	const response = await apiFetch({
+		path: `${ window.quickwp.api }/send`,
+		method: 'POST',
+		data: { ...data }
+	});
+
+	setThreadID( data.step, response.thread_id );
+
+	setRunID( data.step, response.id );
+};
+
+const getEvent = async( type ) => {
+	const threadID = select( 'quickwp/data' ).getThreadID( type );
+
+	const response = await apiFetch({
+		path: addQueryArgs( `${ window.quickwp.api }/get`, {
+			'thread_id': threadID
+		})
+	});
+
+	return response;
+};
+
+const getEventStatus = async( type ) => {
+	const threadID = select( 'quickwp/data' ).getThreadID( type );
+	const runID = select( 'quickwp/data' ).getRunID( type );
+	const { setProcessStatus } = dispatch( 'quickwp/data' );
+
+	const response = await apiFetch({
+		path: addQueryArgs( `${ window.quickwp.api }/status`, {
+			'thread_id': threadID,
+			'run_id': runID
+		})
+	});
+
+	if ( 'completed' !== response.status ) {
+		return false;
+	}
+
+	setProcessStatus( type, true );
+
+	return true;
+};
+
+const extractPalette = response => {
+	const runID = select( 'quickwp/data' ).getRunID( 'color_palette' );
+	const { setError } = dispatch( 'quickwp/data' );
+
+	const { data } = response;
+
+	const target = data.find( item => item.run_id === runID );
+
+	const jsonString = target.content[0].text.value;
+
+	let matches = jsonString.match( /\[(.|\n)*?\]/ );
+
+	if ( matches && matches[0]) {
+		let jsonArrayString = matches[0];
+
+		let jsonObject;
+		try {
+			jsonObject = JSON.parse( jsonArrayString );
+		} catch ( error ) {
+			setError( true );
+			return false;
+		}
+
+		return jsonObject;
+	} else {
+		setError( true );
+		return false;
+	}
+};
+
+const fetchImages = async( request ) => {
+	const runID = select( 'quickwp/data' ).getRunID( 'images' );
+	const { setImages } = dispatch( 'quickwp/data' );
+
+	const { data } = request;
+
+	const target = data.find( item => item.run_id === runID );
+
+	const query = target.content[0].text.value;
+
+	const response = await apiFetch({
+		path: addQueryArgs( `${ window.quickwp.api }/images`, {
+			query
+		})
+	});
+
+
+	setImages( response?.photos );
+};
+
+const awaitEvent = async( type ) => {
+	const hasResolved = await getEventStatus( type );
+
+	if ( ! hasResolved ) {
+		await new Promise( resolve => setTimeout( resolve, 3000 ) );
+		await awaitEvent( type );
+		return;
+	}
+};
+
+export const generateColorPalette = async() => {
+	const siteTopic = select( 'quickwp/data' ).getSiteTopic();
+
+	const {
+		setColorPalette,
+		setProcessStatus
+	} = dispatch( 'quickwp/data' );
+
+	await sendEvent({
+		step: 'color_palette',
+		message: siteTopic
+	});
+
+	await awaitEvent( 'color_palette' );
+
+	const response = await getEvent( 'color_palette' );
+
+	const palette = extractPalette( response );
+
+	setColorPalette( palette );
+	setProcessStatus( 'color_palette', true );
+};
+
+export const generateImages = async() => {
+	const siteDescription = select( 'quickwp/data' ).getSiteDescription();
+
+	const {
+		setImages,
+		setProcessStatus
+	} = dispatch( 'quickwp/data' );
+
+	await sendEvent({
+		step: 'images',
+		message: siteDescription
+	});
+
+	await awaitEvent( 'images' );
+
+	const response = await getEvent( 'images' );
+
+	await fetchImages( response );
+
+	setProcessStatus( 'images', true );
 };

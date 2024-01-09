@@ -4,5 +4,6 @@ parameters:
 		- %currentWorkingDirectory%/inc
 	bootstrapFiles:
 		- %currentWorkingDirectory%/tests/php/static-analysis-stubs/quickwp.php
+	checkGenericClassInNonGenericObjectType: false
 includes:
 	- %currentWorkingDirectory%/vendor/szepeviktor/phpstan-wordpress/extension.neon

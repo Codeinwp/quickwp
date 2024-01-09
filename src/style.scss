@@ -29,6 +29,10 @@
 			&:disabled {
 				@apply opacity-50;
 			}
+
+			.components-spinner {
+				@apply m-0 ml-3;
+			}
 		}
 
 		&.is-secondary {

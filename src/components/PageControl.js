@@ -5,7 +5,7 @@ import { __ } from '@wordpress/i18n';
 
 import { Button } from '@wordpress/components';
 
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -19,7 +19,6 @@ const PageControl = () => {
 	const currentStep = useSelect( ( select ) =>
 		select( 'quickwp/data' ).getStep()
 	);
-	const { setStep } = useDispatch( 'quickwp/data' );
 
 	const currentPage = STEPS.findIndex(
 		( step ) => step.value === currentStep.value
@@ -43,7 +42,7 @@ const PageControl = () => {
 						}
 						aria-label={ STEPS[ page ]?.label }
 						className="text-fg h-6 w-6 !min-w-0 !min-h-0"
-						onClick={ () => setStep( STEPS[ page ]?.value ) }
+						onClick={ () => {} }
 					/>
 				</li>
 			) ) }

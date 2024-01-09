@@ -3,22 +3,48 @@
  */
 import { __ } from '@wordpress/i18n';
 
-import { Button, TextControl } from '@wordpress/components';
+import {
+	Button,
+	TextControl
+} from '@wordpress/components';
 
-import { useDispatch } from '@wordpress/data';
-
-import { useState } from '@wordpress/element';
+import {
+	useDispatch,
+	useSelect
+} from '@wordpress/data';
 
 import { ENTER } from '@wordpress/keycodes';
 
-const SiteTopic = () => {
-	const [ value, setValue ] = useState( '' );
+/**
+ * Internal dependencies.
+ */
+import { generateColorPalette } from '../utils';
 
-	const { onContinue } = useDispatch( 'quickwp/data' );
+const SiteTopic = () => {
+	const { siteTopic } = useSelect( select => {
+		return {
+			siteTopic: select( 'quickwp/data' ).getSiteTopic()
+		};
+	});
+
+	const {
+		onContinue,
+		setSiteTopic
+	} = useDispatch( 'quickwp/data' );
+
+	const onSubmit = async() => {
+		if ( 4 > siteTopic?.length ) {
+			return;
+		}
+
+		// At this point, we start the color palette generation process.
+		generateColorPalette();
+		onContinue();
+	};
 
 	const onEnter = ( e ) => {
-		if ( ENTER === e.keyCode && !! value ) {
-			onContinue();
+		if ( ENTER === e.keyCode && !! siteTopic ) {
+			onSubmit();
 		}
 	};
 
@@ -37,8 +63,8 @@ const SiteTopic = () => {
 					'e.g. Web Agency, Tech Reviewer',
 					'quickwp'
 				) }
-				value={ value }
-				onChange={ setValue }
+				value={ siteTopic }
+				onChange={ setSiteTopic }
 				onKeyDown={ onEnter }
 				hideLabelFromVision={ true }
 				autoFocus={ true }
@@ -46,8 +72,8 @@ const SiteTopic = () => {
 
 			<Button
 				variant="primary"
-				disabled={ ! value }
-				onClick={ onContinue }
+				disabled={ ! 4 > siteTopic?.length }
+				onClick={ onSubmit }
 			>
 				{ __( 'Continue', 'quickwp' ) }
 			</Button>

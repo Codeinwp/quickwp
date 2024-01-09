@@ -21,6 +21,7 @@ define( 'QUICKWP_BASEFILE', __FILE__ );
 define( 'QUICKWP_URL', plugins_url( '/', __FILE__ ) );
 define( 'QUICKWP_PATH', __DIR__ );
 define( 'QUICKWP_VERSION', '1.0.0' );
+define( 'QUICKWP_API', 'https://4ab6-103-217-244-109.ngrok-free.app/api/' );
 
 $vendor_file = QUICKWP_PATH . '/vendor/autoload.php';
 

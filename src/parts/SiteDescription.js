@@ -3,23 +3,41 @@
  */
 import { __ } from '@wordpress/i18n';
 
-import { Button, TextareaControl } from '@wordpress/components';
+import {
+	Button,
+	TextareaControl
+} from '@wordpress/components';
 
-import { useDispatch } from '@wordpress/data';
+import {
+	useDispatch,
+	useSelect
+} from '@wordpress/data';
 
-import { useState } from '@wordpress/element';
-
-import { ENTER } from '@wordpress/keycodes';
+/**
+ * Internal dependencies.
+ */
+import { generateImages } from '../utils';
 
 const SiteDescription = () => {
-	const [ value, setValue ] = useState( '' );
+	const { siteDescription } = useSelect( select => {
+		return {
+			siteDescription: select( 'quickwp/data' ).getSiteDescription()
+		};
+	});
 
-	const { onContinue } = useDispatch( 'quickwp/data' );
+	const {
+		onContinue,
+		setSiteDescription
+	} = useDispatch( 'quickwp/data' );
 
-	const onEnter = ( e ) => {
-		if ( ENTER === e.keyCode && !! value ) {
-			onContinue();
+	const onSubmit = async() => {
+		if ( 4 > siteDescription?.length ) {
+			return;
 		}
+
+		generateImages();
+
+		onContinue();
 	};
 
 	return (
@@ -37,17 +55,16 @@ const SiteDescription = () => {
 					'e.g. Our brand, LifeUp, specializes in life coaching seminars targeted towards businesses in the UK. In addition to group seminars, we offer personal training and one-on-one calls to cater to a variety of needs.',
 					'quickwp'
 				) }
-				value={ value }
-				onChange={ setValue }
-				onKeyDown={ onEnter }
+				value={ siteDescription }
+				onChange={ setSiteDescription }
 				hideLabelFromVision={ true }
 				autoFocus={ true }
 			/>
 
 			<Button
 				variant="primary"
-				disabled={ ! value }
-				onClick={ onContinue }
+				disabled={ ! 4 > siteDescription?.length }
+				onClick={ onSubmit }
 			>
 				{ __( 'Continue', 'quickwp' ) }
 			</Button>

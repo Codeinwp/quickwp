@@ -15,9 +15,21 @@ import Header from './parts/Header';
 const App = () => {
 	const isEditorLoading = useIsSiteEditorLoading();
 
-	const currentStep = useSelect( ( select ) =>
-		select( 'quickwp/data' ).getStep()
-	);
+	const {
+		currentStep,
+		hasError
+	} = useSelect( select => {
+		const {
+			getStep,
+			hasError
+		} = select( 'quickwp/data' );
+
+		return {
+			currentStep: getStep(),
+			hasError: hasError()
+		};
+	});
+
 	const StepControls = currentStep?.view || null;
 
 	if ( isEditorLoading ) {
@@ -27,6 +39,22 @@ const App = () => {
 				className="flex flex-col items-center justify-center fixed py-12 px-14 z-50 bg-bg overflow-auto inset-0"
 			>
 				<Loader />
+			</div>
+		);
+	}
+
+	if ( hasError ) {
+		return (
+			<div
+				id="quickwp"
+				className="flex flex-col items-center justify-center fixed py-12 px-14 z-50 bg-bg overflow-auto inset-0"
+			>
+				<h2 className="text-fg text-xl not-italic font-medium leading-10">
+					{ __(
+						'There has been an error. Please refresh the page and try again.',
+						'quickwp'
+					) }
+				</h2>
 			</div>
 		);
 	}
