@@ -12,7 +12,9 @@ module.exports = {
 			colors: {
 				bg: '#000000',
 				fg: '#FFFFFF',
-				secondary: '#232323'
+				secondary: '#232323',
+				'bg-alt': '#2F2F2F',
+				'fg-alt': '#E0E0E0'
 			},
 			maxHeight: {
 				'md': '32rem',

@@ -10,7 +10,11 @@ import {
  * Internal dependencies.
  */
 import STEPS from './steps';
-import { generateColorPalette, generateImages } from './utils';
+import {
+	generateColorPalette,
+	generateImages,
+	generateHomepage
+} from './utils';
 
 const DEFAULT_STATE = {
 	step: 0,
@@ -24,13 +28,21 @@ const DEFAULT_STATE = {
 			'thread_id': null,
 			'run_id': null,
 			hasLoaded: false
+		},
+		'homepage': {
+			'thread_id': null,
+			'run_id': null,
+			hasLoaded: false
 		}
 	},
-	images: [],
+	colorPalette: [],
+	images: {},
+	imageKeywords: [],
+	activeImageKeyword: null,
+	homepage: null,
 	siteTopic: null,
 	siteDescription: null,
-	hasError: false,
-	colorPalette: []
+	hasError: false
 };
 
 const actions = {
@@ -77,8 +89,11 @@ const actions = {
 			case 'site_topic':
 				generateColorPalette();
 				break;
-			case 'color_palette':
+			case 'site_description':
+				generateHomepage();
 				generateImages();
+				break;
+			case 'color_palette':
 				break;
 			}
 
@@ -103,16 +118,35 @@ const actions = {
 			colorPalette
 		};
 	},
+	setImages( key, images ) {
+		return {
+			type: 'SET_IMAGES',
+			key,
+			images
+		};
+	},
+	setImageKeywords( imageKeywords ) {
+		return {
+			type: 'SET_IMAGE_KEYWORDS',
+			imageKeywords
+		};
+	},
+	setActiveImageKeyword( activeImageKeyword ) {
+		return {
+			type: 'SET_ACTIVE_IMAGE_KEYWORD',
+			activeImageKeyword
+		};
+	},
+	setHomepage( homepage ) {
+		return {
+			type: 'SET_HOMEPAGE',
+			homepage
+		};
+	},
 	setError( hasError ) {
 		return {
 			type: 'SET_ERROR',
 			hasError
-		};
-	},
-	setImages( images ) {
-		return {
-			type: 'SET_IMAGES',
-			images
 		};
 	},
 	setThreadID( item, threadID ) {
@@ -173,7 +207,25 @@ const store = createReduxStore( 'quickwp/data', {
 		case 'SET_IMAGES':
 			return {
 				...state,
-				images: action.images
+				images: {
+					...state.images,
+					[ action.key ]: action.images
+				}
+			};
+		case 'SET_IMAGE_KEYWORDS':
+			return {
+				...state,
+				imageKeywords: action.imageKeywords
+			};
+		case 'SET_ACTIVE_IMAGE_KEYWORD':
+			return {
+				...state,
+				activeImageKeyword: action.activeImageKeyword
+			};
+		case 'SET_HOMEPAGE':
+			return {
+				...state,
+				homepage: action.homepage
 			};
 		case 'SET_THREAD_ID':
 			return {
@@ -228,11 +280,20 @@ const store = createReduxStore( 'quickwp/data', {
 		getColorPalette( state ) {
 			return state.colorPalette;
 		},
+		getImages( state, key ) {
+			return state.images[ key ];
+		},
+		getImageKeywords( state ) {
+			return state.imageKeywords;
+		},
+		getActiveImageKeyword( state ) {
+			return state.activeImageKeyword;
+		},
+		getHomepage( state ) {
+			return state.homepage;
+		},
 		hasError( state ) {
 			return state.hasError;
-		},
-		getImages( state ) {
-			return state.images;
 		},
 		getThreadID( state, item ) {
 			return state.processes[ item ]?.thread_id;

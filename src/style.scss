@@ -5,12 +5,20 @@
 #quickwp {
 	--wp-admin-theme-color: #ffffff;
 
-	.components-text-control__input {
-		@apply bg-transparent max-w-xl border-0 h-12 text-2xl not-italic font-normal text-fg shadow-none;
-	}
+	.components-base-control {
+		.components-text-control__input {
+			@apply bg-transparent max-w-xl border-0 h-12 text-2xl not-italic font-normal text-fg shadow-none;
+		}
 
-	.components-textarea-control__input {
-		@apply bg-transparent max-w-5xl h-24 border-0 text-2xl not-italic font-normal text-fg shadow-none resize-none;
+		.components-textarea-control__input {
+			@apply bg-transparent max-w-5xl h-24 border-0 text-2xl not-italic font-normal text-fg shadow-none resize-none;
+		}
+
+		&.is-dark {
+			.components-text-control__input {
+				@apply text-fg-alt bg-bg-alt h-10 w-full max-w-full text-xs p-3;
+			}
+		}
 	}
 
 	.components-text-control__input::placeholder,
@@ -44,6 +52,14 @@
 
 			&:disabled {
 				@apply opacity-50;
+			}
+		}
+
+		&.is-token {
+			@apply text-xs leading-none px-4 py-2;
+
+			&.is-active {
+				@apply bg-fg text-bg;
 			}
 		}
 	}

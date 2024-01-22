@@ -7,11 +7,12 @@ import {
 	dispatch,
 	select
 } from '@wordpress/data';
+import { home } from '@wordpress/icons';
 
 import {
 	Circle,
-	G,
 	Path,
+	Rect,
 	SVG
 } from '@wordpress/primitives';
 
@@ -46,21 +47,25 @@ export const PageControlIcon = ({ isFilled = false }) => {
 export const Logo = () => {
 	return (
 		<SVG
-			width="51"
-			height="51"
-			viewBox="0 0 51 51"
+			width="64"
+			height="64"
+			viewBox="0 0 115 115"
 			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<G id="logo">
-				<Path
-					id="QuickWP"
-					fill-rule="evenodd"
-					clip-rule="evenodd"
-					d="M25.5 51C39.5833 51 51 39.5833 51 25.5C51 11.4167 39.5833 0 25.5 0C11.4167 0 0 11.4167 0 25.5C0 39.5833 11.4167 51 25.5 51ZM25.5 37.6957C32.2355 37.6957 37.6957 32.2355 37.6957 25.5C37.6957 18.7645 32.2355 13.3043 25.5 13.3043C18.7645 13.3043 13.3043 18.7645 13.3043 25.5C13.3043 32.2355 18.7645 37.6957 25.5 37.6957Z"
-					fill="white"
-				/>
-			</G>
+			xmlns="http://www.w3.org/2000/svg">
+			<Path
+				fill-rule="evenodd"
+				clip-rule="evenodd"
+				d="M57.5 93C77.6584 93 94 76.6584 94 56.5C94 36.3416 77.6584 20 57.5 20C37.3416 20 21 36.3416 21 56.5C21 76.6584 37.3416 93 57.5 93ZM57.5 73.9565C67.141 73.9565 74.9565 66.141 74.9565 56.5C74.9565 46.859 67.141 39.0435 57.5 39.0435C47.859 39.0435 40.0435 46.859 40.0435 56.5C40.0435 66.141 47.859 73.9565 57.5 73.9565Z"
+				fill="white"
+			/>
+			<Rect
+				x="63.9414"
+				y="86.8833"
+				width="20.0392"
+				height="14.5311"
+				transform="rotate(-30 63.9414 86.8833)"
+				fill="white"
+			/>
 		</SVG>
 	);
 };
@@ -84,9 +89,10 @@ const sendEvent = async( data ) => {
 
 const getEvent = async( type ) => {
 	const threadID = select( 'quickwp/data' ).getThreadID( type );
+	const route = 'homepage' !== type ? 'get' : 'templates';
 
 	const response = await apiFetch({
-		path: addQueryArgs( `${ window.quickwp.api }/get`, {
+		path: addQueryArgs( `${ window.quickwp.api }/${ route }`, {
 			'thread_id': threadID
 		})
 	});
@@ -147,13 +153,31 @@ const extractPalette = response => {
 
 const fetchImages = async( request ) => {
 	const runID = select( 'quickwp/data' ).getRunID( 'images' );
-	const { setImages } = dispatch( 'quickwp/data' );
+	const {
+		setActiveImageKeyword,
+		setImageKeywords
+	} = dispatch( 'quickwp/data' );
 
 	const { data } = request;
 
 	const target = data.find( item => item.run_id === runID );
 
-	const query = target.content[0].text.value;
+	let queries = target.content[0].text.value;
+
+	queries = queries.split( ',' );
+
+	queries = queries.map( query => query.trim() );
+
+	const query = queries[0];
+
+	setImageKeywords( queries );
+	setActiveImageKeyword( query );
+
+	await requestImages( query );
+};
+
+export const requestImages = async( query ) => {
+	const { setImages } = dispatch( 'quickwp/data' );
 
 	const response = await apiFetch({
 		path: addQueryArgs( `${ window.quickwp.api }/images`, {
@@ -161,16 +185,15 @@ const fetchImages = async( request ) => {
 		})
 	});
 
-
-	setImages( response?.photos );
+	setImages( query, response?.photos );
 };
 
-const awaitEvent = async( type ) => {
+const awaitEvent = async( type, interval = 5000 ) => {
 	const hasResolved = await getEventStatus( type );
 
 	if ( ! hasResolved ) {
-		await new Promise( resolve => setTimeout( resolve, 3000 ) );
-		await awaitEvent( type );
+		await new Promise( resolve => setTimeout( resolve, interval ) );
+		await awaitEvent( type, interval );
 		return;
 	}
 };
@@ -208,11 +231,44 @@ export const generateImages = async() => {
 		message: siteDescription
 	});
 
-	await awaitEvent( 'images' );
+	await awaitEvent( 'images', 10000 );
 
 	const response = await getEvent( 'images' );
 
 	await fetchImages( response );
 
 	setProcessStatus( 'images', true );
+};
+
+export const generateHomepage = async() => {
+	const siteTopic = select( 'quickwp/data' ).getSiteTopic();
+	const siteDescription = select( 'quickwp/data' ).getSiteDescription();
+
+	const {
+		setError,
+		setProcessStatus,
+		setHomepage
+	} = dispatch( 'quickwp/data' );
+
+	await sendEvent({
+		step: 'homepage',
+		message: `Website topic: ${ siteTopic } | Website description${ siteDescription }`
+	});
+
+	await awaitEvent( 'homepage', 10000 );
+
+	const response = await getEvent( 'homepage' );
+
+	if ( 'success' !== response?.status ) {
+		setError( true );
+		return;
+	}
+
+	let homepageTemplate = '';
+	homepageTemplate += '<!-- wp:template-part {"slug":"header","theme":"quickwp-theme","tagName":"header","area":"header"} /-->';
+	homepageTemplate += response.data;
+	homepageTemplate += '<!-- wp:template-part {"slug":"footer","theme":"quickwp-theme","tagName":"footer","area":"footer"} /-->';
+
+	setHomepage( homepageTemplate );
+	setProcessStatus( 'homepage', true );
 };

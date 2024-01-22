@@ -17,13 +17,13 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'QUICKWP_BASEFILE', __FILE__ );
-define( 'QUICKWP_URL', plugins_url( '/', __FILE__ ) );
-define( 'QUICKWP_PATH', __DIR__ );
-define( 'QUICKWP_VERSION', '1.0.0' );
-define( 'QUICKWP_API', 'https://4ab6-103-217-244-109.ngrok-free.app/api/' );
+define( 'QUICKWP_APP_BASEFILE', __FILE__ );
+define( 'QUICKWP_APP_URL', plugins_url( '/', __FILE__ ) );
+define( 'QUICKWP_APP_PATH', __DIR__ );
+define( 'QUICKWP_APP_VERSION', '1.0.0' );
+define( 'QUICKWP_APP_API', 'https://aaf0-103-217-244-105.ngrok-free.app/api/' );
 
-$vendor_file = QUICKWP_PATH . '/vendor/autoload.php';
+$vendor_file = QUICKWP_APP_PATH . '/vendor/autoload.php';
 
 if ( is_readable( $vendor_file ) ) {
 	require_once $vendor_file;

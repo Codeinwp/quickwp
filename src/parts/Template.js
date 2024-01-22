@@ -1,18 +1,13 @@
 /**
- * External dependencies.
- */
-import classNames from 'classnames';
-
-import { check } from '@wordpress/icons';
-
-/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
 
+import { parse } from '@wordpress/blocks';
+
 import {
 	Button,
-	Icon
+	Spinner
 } from '@wordpress/components';
 
 import {
@@ -20,27 +15,38 @@ import {
 	useSelect
 } from '@wordpress/data';
 
-import { useState } from '@wordpress/element';
-
 /**
  * Internal dependencies.
  */
 import TemplatePreview from '../components/TemplatePreview';
 
-const dummy = [ 1, 2, 3, 4 ];
-
 const Template = () => {
-	const [ value, setValue ] = useState();
-
 	const { onContinue } = useDispatch( 'quickwp/data' );
 
-	const { template } = useSelect( ( select ) => {
-		const { getBlocks } = select( 'core/block-editor' );
+	const {
+		template,
+		hasLoaded
+	} = useSelect( ( select ) => {
+		const {
+			getHomepage,
+			getProcessStatus
+		} = select( 'quickwp/data' );
+
+		const homepage = getHomepage();
 
 		return {
-			template: getBlocks()
+			template: homepage ? parse( homepage ) : [],
+			hasLoaded: true === getProcessStatus( 'homepage' )
 		};
 	});
+
+	if ( ! hasLoaded ) {
+		return (
+			<div className="flex flex-1 flex-row items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-1 flex-row gap-8 items-center">
@@ -57,37 +63,10 @@ const Template = () => {
 				</Button>
 			</div>
 
-			<div className="block basis-full overflow-scroll max-h-80vh">
-				<div className="grid grid-cols-2 gap-4 p-1">
-					{ dummy.map( ( image, index ) => (
-						<div
-							key={ index }
-							className={ classNames(
-								'flex flex-1 cursor-pointer max-w-sm max-h-md aspect-vert',
-								{
-									'outline outline-offset-2 outline-2 outline-white grayscale': value === image
-								}
-							) }
-							onClick={ () => {
-								setValue( value === image ? null : image );
-							}}
-						>
-							{ value === image && (
-								<div className="bg-white w-8 h-8 absolute flex justify-center items-center shadow-selected -right-1 -top-1 z-10">
-									<Icon
-										icon={ check }
-										size={ 24 }
-									/>
-								</div>
-							) }
-
-							<TemplatePreview
-								template={ template }
-							/>
-						</div>
-					) ) }
-				</div>
-			</div>
+			<TemplatePreview
+				template={ template }
+				canScroll={ true }
+			/>
 		</div>
 	);
 };

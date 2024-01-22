@@ -12,8 +12,10 @@ import { __ } from '@wordpress/i18n';
 
 import {
 	Button,
+	Disabled,
 	Icon,
-	Spinner
+	Spinner,
+	TextControl
 } from '@wordpress/components';
 
 import {
@@ -23,27 +25,63 @@ import {
 
 import { useState } from '@wordpress/element';
 
+import { ENTER } from '@wordpress/keycodes';
+
+/**
+ * Internal dependencies.
+ */
+import { requestImages } from '../utils';
+
 const ImageSuggestions = () => {
 	const [ value, setValue ] = useState([]);
+	const [ search, setSearch ] = useState( '' );
+	const [ isLoading, setIsLoading ] = useState( false );
 
 	const {
 		images,
+		imageKeywords,
+		activeImageKeyword,
 		hasLoaded
 	} = useSelect( select => {
 		const {
 			getImages,
+			getImageKeywords,
+			getActiveImageKeyword,
 			getProcessStatus
 		} = select( 'quickwp/data' );
 
-		const images = getImages() || [];
+		const activeImageKeyword = getActiveImageKeyword();
+
+		const images = getImages( activeImageKeyword ) || [];
 
 		return {
-			images: images.slice( 0, 9 ),
+			images,
+			imageKeywords: getImageKeywords() || [],
+			activeImageKeyword,
 			hasLoaded: true === getProcessStatus( 'images' )
 		};
 	});
 
-	const { onContinue } = useDispatch( 'quickwp/data' );
+	const {
+		onContinue,
+		setActiveImageKeyword
+	} = useDispatch( 'quickwp/data' );
+
+	const onSearch = async( query = search ) => {
+		if ( ! query || activeImageKeyword === query ) {
+			return;
+		}
+
+		if ( query !== search ) {
+			setSearch( query );
+		}
+
+		setActiveImageKeyword( query );
+
+		setIsLoading( true );
+		await requestImages( query );
+		setIsLoading( false );
+	};
 
 	if ( ! hasLoaded ) {
 		return (
@@ -68,41 +106,87 @@ const ImageSuggestions = () => {
 				</Button>
 			</div>
 
-			<div className="block basis-full overflow-scroll max-h-80vh">
-				<div className="grid grid-cols-3 gap-4 p-1">
-					{ images.map( ( image, index ) => (
-						<div
-							key={ image.id }
-							className={ classNames(
-								'flex flex-1 cursor-pointer',
-								{
-									'outline outline-offset-2 outline-2 outline-white grayscale': value.includes( image.id )
-								}
-							) }
-							onClick={ () => {
-								if ( value.includes( image.id ) ) {
-									setValue( value.filter( ( item ) => item !== image.id ) );
-								} else {
-									setValue([ ...value, image.id ]);
-								}
-							}}
-						>
-							{ value.includes( image.id ) && (
-								<div className="bg-white w-8 h-8 absolute flex justify-center items-center shadow-selected -right-1 -top-1 z-10">
-									<Icon
-										icon={ check }
-										size={ 24 }
-									/>
-								</div>
-							) }
+			<div className="block basis-full self-start max-h-80vh">
+				<TextControl
+					label={ __( 'Search for Images', 'quickwp' ) }
+					placeholder={ __( 'Search for Images', 'quickwp' ) }
+					hideLabelFromVision={ true }
+					value={ search }
+					onChange={ setSearch }
+					onKeyDown={ e => {
+						if ( ENTER === e.keyCode ) {
+							onSearch();
+						}
+					}}
+					disabled={ isLoading }
+					className="is-dark"
+				/>
 
-							<img
-								className="object-cover aspect-square"
-								src={ image.src.original }
-							/>
-						</div>
-					) ) }
+				<div className="flex gap-2 pt-1 pb-2">
+					{ imageKeywords.map( ( keyword ) => {
+						return (
+							<Button
+								key={ keyword }
+								variant="secondary"
+								isSmall={ true }
+								className={ classNames(
+									'is-token',
+									{
+										'is-active': keyword === activeImageKeyword
+									}
+								) }
+								onClick={ () => {
+									onSearch( keyword );
+								} }
+							>
+								{ keyword }
+							</Button>
+						);
+					}) }
 				</div>
+
+				{ ( isLoading ) && (
+					<div className="flex flex-1 flex-row items-center justify-center py-4">
+						<Spinner />
+					</div>
+				) }
+
+				<Disabled isDisabled={ isLoading }>
+					<div className="grid grid-cols-3 gap-4 p-1 max-h-80vh overflow-scroll">
+						{ images.map( image => (
+							<div
+								key={ image.id }
+								className={ classNames(
+									'flex flex-1 cursor-pointer',
+									{
+										'outline outline-offset-2 outline-2 outline-white grayscale': value.includes( image.id )
+									}
+								) }
+								onClick={ () => {
+									if ( value.includes( image.id ) ) {
+										setValue( value.filter( ( item ) => item !== image.id ) );
+									} else {
+										setValue([ ...value, image.id ]);
+									}
+								}}
+							>
+								{ value.includes( image.id ) && (
+									<div className="bg-white w-8 h-8 absolute flex justify-center items-center shadow-selected -right-1 -top-1 z-10">
+										<Icon
+											icon={ check }
+											size={ 24 }
+										/>
+									</div>
+								) }
+
+								<img
+									className="object-cover aspect-square"
+									src={ image.src.original }
+								/>
+							</div>
+						) ) }
+					</div>
+				</Disabled>
 			</div>
 		</div>
 	);

@@ -59,7 +59,7 @@ class API {
 		$namespace = $this->namespace . '/' . $this->version;
 
 		$routes = array(
-			'send'   => array(
+			'send'      => array(
 				'methods'  => \WP_REST_Server::CREATABLE,
 				'args'     => array(
 					'step'    => array(
@@ -73,7 +73,7 @@ class API {
 				),
 				'callback' => array( $this, 'send' ),
 			),
-			'status' => array(
+			'status'    => array(
 				'methods'  => \WP_REST_Server::READABLE,
 				'args'     => array(
 					'thread_id' => array(
@@ -87,11 +87,17 @@ class API {
 				),
 				'callback' => array( $this, 'status' ),
 			),
-			'get'    => array(
+			'get'       => array(
 				'methods'  => \WP_REST_Server::READABLE,
+				'args'     => array(
+					'thread_id' => array(
+						'required' => true,
+						'type'     => 'string',
+					),
+				),
 				'callback' => array( $this, 'get' ),
 			),
-			'images' => array(
+			'images'    => array(
 				'methods'  => \WP_REST_Server::READABLE,
 				'args'     => array(
 					'query' => array(
@@ -100,6 +106,16 @@ class API {
 					),
 				),
 				'callback' => array( $this, 'images' ),
+			),
+			'templates' => array(
+				'methods'  => \WP_REST_Server::READABLE,
+				'args'     => array(
+					'thread_id' => array(
+						'required' => true,
+						'type'     => 'string',
+					),
+				),
+				'callback' => array( $this, 'templates' ),
 			),
 		);
 
@@ -123,9 +139,10 @@ class API {
 		$data = $request->get_params();
 
 		$request = wp_remote_post(
-			QUICKWP_API . 'wizard/send',
+			QUICKWP_APP_API . 'wizard/send',
 			array(
-				'body' => array(
+				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'body'    => array(
 					'step'    => $data['step'],
 					'message' => $data['message'],
 				),
@@ -161,9 +178,10 @@ class API {
 		$data = $request->get_params();
 
 		$request = wp_remote_get( // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
-			QUICKWP_API . 'wizard/status',
+			QUICKWP_APP_API . 'wizard/status',
 			array(
-				'body' => array(
+				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'body'    => array(
 					'thread_id' => $data['thread_id'],
 					'run_id'    => $data['run_id'],
 				),
@@ -199,9 +217,10 @@ class API {
 		$data = $request->get_params();
 
 		$request = wp_remote_get(// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
-			QUICKWP_API . 'wizard/get',
+			QUICKWP_APP_API . 'wizard/get',
 			array(
-				'body' => array(
+				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'body'    => array(
 					'thread_id' => $data['thread_id'],
 				),
 			)
@@ -226,6 +245,107 @@ class API {
 	}
 
 	/**
+	 * Get templates.
+	 * 
+	 * @param \WP_REST_Request $request Request.
+	 * 
+	 * @return \WP_REST_Response
+	 */
+	public function templates( \WP_REST_Request $request ) {
+		$data = $request->get_params();
+
+		$request = wp_remote_get(// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
+			QUICKWP_APP_API . 'wizard/get',
+			array(
+				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'body'    => array(
+					'thread_id' => $data['thread_id'],
+				),
+			)
+		);
+
+		if ( is_wp_error( $request ) ) {
+			return new \WP_REST_Response( array( 'error' => $request->get_error_message() ), 500 );
+		}
+
+		/** 
+		 * Holds the response as a standard class object
+		 *
+		 * @var \stdClass $response 
+		 */
+		$response = json_decode( wp_remote_retrieve_body( $request ) );
+
+		if ( ! isset( $response->data ) || ! $response->data ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
+		}
+
+		$items = self::process_json_from_response( $response->data );
+
+		if ( ! $items ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
+		}
+
+		$patterns_used = array();
+
+		foreach ( $items as $item ) {
+			if ( ! isset( $item['slug'] ) || ! isset( $item['order'] ) || ! isset( $item['strings'] ) ) {
+				continue;
+			}
+
+			$patterns_used[] = array(
+				'order' => $item['order'],
+				'slug'  => $item['slug'],
+			);
+
+			$strings = $item['strings'];
+
+			foreach ( $strings as $string ) {
+				add_filter(
+					'quickwp/' . $string['slug'],
+					function () use( $string ) {
+						return $string['value'];
+					} 
+				);
+			}
+		}
+
+		usort(
+			$patterns_used,
+			function ( $a, $b ) {
+				return $a['order'] <=> $b['order'];
+			} 
+		);
+
+		$theme_path = get_stylesheet_directory();
+
+		$filtered_patterns = array();
+
+		foreach ( $patterns_used as $pattern ) {
+			$pattern['slug'] = str_replace( 'quickwp/', '', $pattern['slug'] );
+			
+			$pattern_path = $theme_path . '/patterns/' . $pattern['slug'] . '.php';
+
+			if ( ! file_exists( $pattern_path ) ) {
+				continue;
+			}
+
+			ob_start();
+			include $pattern_path;
+			$pattern_content = ob_get_clean();
+		
+			$filtered_patterns[] = $pattern_content;
+		}
+
+		return new \WP_REST_Response(
+			array(
+				'status' => 'success',
+				'data'   => implode( '', $filtered_patterns ),
+			),
+			200 
+		);
+	}
+
+	/**
 	 * Get images.
 	 * 
 	 * @param \WP_REST_Request $request Request.
@@ -236,9 +356,10 @@ class API {
 		$data = $request->get_params();
 
 		$request = wp_remote_get(// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
-			QUICKWP_API . 'wizard/images',
+			QUICKWP_APP_API . 'wizard/images',
 			array(
-				'body' => array(
+				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'body'    => array(
 					'query' => $data['query'],
 				),
 			)
@@ -259,6 +380,45 @@ class API {
 			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
 		}
 
+
+
 		return new \WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Get JSON from response.
+	 *
+	 * @param array $data Response.
+	 * 
+	 * @return array|bool
+	 */
+	private static function process_json_from_response( $data ) {
+		// Find the target item.
+		$target = current( $data );
+
+		if ( false === $target ) {
+			// Handle the case where the target is not found.
+			return false;
+		}
+	
+		// Extract the JSON string.
+		$json_string = $target->content[0]->text->value;
+
+		try {
+			$json_object = json_decode( $json_string, true );
+			return $json_object;
+		} catch ( \Exception $e) {
+			// If parsing failed, try to find a JSON array in the string.
+			preg_match( '/\[(.|\n)*\]/', $json_string, $matches );
+		
+			if ( ! empty( $matches ) ) {
+				$json_array_string = $matches[0];
+				$json_object       = json_decode( $json_array_string, true );
+		
+				return $json_object;
+			}
+		}
+
+		return false;
 	}
 }

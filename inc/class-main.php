@@ -54,18 +54,18 @@ class Main {
 			return;
 		}
 
-		$asset_file = include QUICKWP_PATH . '/build/index.asset.php';
+		$asset_file = include QUICKWP_APP_PATH . '/build/index.asset.php';
 
 		wp_enqueue_style(
 			'quickwp',
-			QUICKWP_URL . 'build/style-index.css',
+			QUICKWP_APP_URL . 'build/style-index.css',
 			array( 'wp-components' ),
 			$asset_file['version']
 		);
 
 		wp_enqueue_script(
 			'quickwp',
-			QUICKWP_URL . 'build/index.js',
+			QUICKWP_APP_URL . 'build/index.js',
 			$asset_file['dependencies'],
 			$asset_file['version'],
 			true
