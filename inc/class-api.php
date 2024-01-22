@@ -390,7 +390,7 @@ class API {
 	 *
 	 * @param array $data Response.
 	 * 
-	 * @return array|bool
+	 * @return array|false
 	 */
 	private static function process_json_from_response( $data ) {
 		// Find the target item.
@@ -407,7 +407,7 @@ class API {
 		try {
 			$json_object = json_decode( $json_string, true );
 			return $json_object;
-		} catch ( \Exception $e) {
+		} catch ( \Exception $e ) {
 			// If parsing failed, try to find a JSON array in the string.
 			preg_match( '/\[(.|\n)*\]/', $json_string, $matches );
 		
