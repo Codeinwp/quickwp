@@ -25,10 +25,12 @@ const Template = () => {
 
 	const {
 		template,
+		isSaving,
 		hasLoaded
 	} = useSelect( ( select ) => {
 		const {
 			getHomepage,
+			isSaving,
 			getProcessStatus
 		} = select( 'quickwp/data' );
 
@@ -36,6 +38,7 @@ const Template = () => {
 
 		return {
 			template: homepage ? parse( homepage ) : [],
+			isSaving: isSaving(),
 			hasLoaded: true === getProcessStatus( 'homepage' )
 		};
 	});
@@ -58,7 +61,12 @@ const Template = () => {
 					) }
 				</h2>
 
-				<Button variant="primary" onClick={ onContinue }>
+				<Button
+					variant="primary"
+					disabled={ isSaving }
+					isBusy={ isSaving }
+					onClick={ onContinue }
+				>
 					{ __( 'Continue', 'quickwp' ) }
 				</Button>
 			</div>

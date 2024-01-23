@@ -176,6 +176,16 @@ const fetchImages = async( request ) => {
 	await requestImages( query );
 };
 
+const awaitEvent = async( type, interval = 5000 ) => {
+	const hasResolved = await getEventStatus( type );
+
+	if ( ! hasResolved ) {
+		await new Promise( resolve => setTimeout( resolve, interval ) );
+		await awaitEvent( type, interval );
+		return;
+	}
+};
+
 export const requestImages = async( query ) => {
 	const { setImages } = dispatch( 'quickwp/data' );
 
@@ -186,16 +196,6 @@ export const requestImages = async( query ) => {
 	});
 
 	setImages( query, response?.photos );
-};
-
-const awaitEvent = async( type, interval = 5000 ) => {
-	const hasResolved = await getEventStatus( type );
-
-	if ( ! hasResolved ) {
-		await new Promise( resolve => setTimeout( resolve, interval ) );
-		await awaitEvent( type, interval );
-		return;
-	}
 };
 
 export const generateColorPalette = async() => {
@@ -243,6 +243,15 @@ export const generateImages = async() => {
 export const generateHomepage = async() => {
 	const siteTopic = select( 'quickwp/data' ).getSiteTopic();
 	const siteDescription = select( 'quickwp/data' ).getSiteDescription();
+	const images = select( 'quickwp/data' ).getSelectedImages();
+	const currentTemplate = select( 'core/edit-site' ).getEditedPostId();
+
+	const { editEntityRecord } = dispatch( 'core' );
+
+	const imagesAr = images.map( image => ({
+		src: image.src.original,
+		alt: image.alt
+	}) );
 
 	const {
 		setError,
@@ -252,7 +261,7 @@ export const generateHomepage = async() => {
 
 	await sendEvent({
 		step: 'homepage',
-		message: `Website topic: ${ siteTopic } | Website description${ siteDescription }`
+		message: `Website topic: ${ siteTopic } | Website description: ${ siteDescription } | Images: ${ JSON.stringify( imagesAr ) }`
 	});
 
 	await awaitEvent( 'homepage', 10000 );
@@ -269,6 +278,28 @@ export const generateHomepage = async() => {
 	homepageTemplate += response.data;
 	homepageTemplate += '<!-- wp:template-part {"slug":"footer","theme":"quickwp-theme","tagName":"footer","area":"footer"} /-->';
 
+	editEntityRecord( 'postType', 'wp_template', currentTemplate, {
+		'content': homepageTemplate
+	});
+
 	setHomepage( homepageTemplate );
 	setProcessStatus( 'homepage', true );
+};
+
+export const saveChanges = async() => {
+	const { __experimentalGetDirtyEntityRecords } = select( 'core' );
+
+	const { saveEditedEntityRecord } = dispatch( 'core' );
+
+	const { setSaving } = dispatch( 'quickwp/data' );
+
+	const edits = __experimentalGetDirtyEntityRecords();
+
+	setSaving( true );
+
+	await Promise.all( edits.map( async edit => {
+		await saveEditedEntityRecord( edit.kind, edit.name, edit?.key );
+	}) );
+
+	setSaving( false );
 };

@@ -303,9 +303,22 @@ class API {
 				add_filter(
 					'quickwp/' . $string['slug'],
 					function () use( $string ) {
-						return $string['value'];
+						return esc_html( $string['value'] );
 					} 
 				);
+			}
+
+			if ( isset( $item['images'] ) ) {
+				$images = $item['images'];
+
+				foreach ( $images as $image ) {
+					add_filter(
+						'quickwp/' . $image['slug'],
+						function () use( $image ) {
+							return esc_url( $image['src'] );
+						} 
+					);
+				}
 			}
 		}
 

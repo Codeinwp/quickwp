@@ -13,7 +13,8 @@ import STEPS from './steps';
 import {
 	generateColorPalette,
 	generateImages,
-	generateHomepage
+	generateHomepage,
+	saveChanges
 } from './utils';
 
 const DEFAULT_STATE = {
@@ -39,9 +40,11 @@ const DEFAULT_STATE = {
 	images: {},
 	imageKeywords: [],
 	activeImageKeyword: null,
+	selectedImages: [],
 	homepage: null,
 	siteTopic: null,
 	siteDescription: null,
+	isSavimg: false,
 	hasError: false
 };
 
@@ -90,10 +93,15 @@ const actions = {
 				generateColorPalette();
 				break;
 			case 'site_description':
-				generateHomepage();
 				generateImages();
 				break;
 			case 'color_palette':
+				break;
+			case 'image_suggestions':
+				generateHomepage();
+				break;
+			case 'frontpage_template':
+				saveChanges();
 				break;
 			}
 
@@ -137,6 +145,29 @@ const actions = {
 			activeImageKeyword
 		};
 	},
+	toggleSelectedImage( image ) {
+		return ({ dispatch, select }) => {
+			const selectedImages = select.getSelectedImages();
+
+			if ( selectedImages.includes( image ) ) {
+				dispatch( actions.removeSelectedImage( image ) );
+			} else {
+				dispatch( actions.addSelectedImage( image ) );
+			}
+		};
+	},
+	addSelectedImage( image ) {
+		return {
+			type: 'ADD_SELECTED_IMAGE',
+			image
+		};
+	},
+	removeSelectedImage( image ) {
+		return {
+			type: 'REMOVE_SELECTED_IMAGE',
+			image
+		};
+	},
 	setHomepage( homepage ) {
 		return {
 			type: 'SET_HOMEPAGE',
@@ -147,6 +178,12 @@ const actions = {
 		return {
 			type: 'SET_ERROR',
 			hasError
+		};
+	},
+	setSaving( isSaving ) {
+		return {
+			type: 'SET_SAVING',
+			isSaving
 		};
 	},
 	setThreadID( item, threadID ) {
@@ -204,6 +241,11 @@ const store = createReduxStore( 'quickwp/data', {
 				...state,
 				hasError: action.hasError
 			};
+		case 'SET_SAVING':
+			return {
+				...state,
+				isSaving: action.isSaving
+			};
 		case 'SET_IMAGES':
 			return {
 				...state,
@@ -221,6 +263,21 @@ const store = createReduxStore( 'quickwp/data', {
 			return {
 				...state,
 				activeImageKeyword: action.activeImageKeyword
+			};
+		case 'ADD_SELECTED_IMAGE':
+			return {
+				...state,
+				selectedImages: [
+					...state.selectedImages,
+					action.image
+				]
+			};
+		case 'REMOVE_SELECTED_IMAGE':
+			return {
+				...state,
+				selectedImages: state.selectedImages.filter(
+					( image ) => image !== action.image
+				)
 			};
 		case 'SET_HOMEPAGE':
 			return {
@@ -289,11 +346,17 @@ const store = createReduxStore( 'quickwp/data', {
 		getActiveImageKeyword( state ) {
 			return state.activeImageKeyword;
 		},
+		getSelectedImages( state ) {
+			return state.selectedImages;
+		},
 		getHomepage( state ) {
 			return state.homepage;
 		},
 		hasError( state ) {
 			return state.hasError;
+		},
+		isSaving( state ) {
+			return state.isSaving;
 		},
 		getThreadID( state, item ) {
 			return state.processes[ item ]?.thread_id;

@@ -23,7 +23,10 @@ import {
 	useSelect
 } from '@wordpress/data';
 
-import { useState } from '@wordpress/element';
+import {
+	useEffect,
+	useState
+} from '@wordpress/element';
 
 import { ENTER } from '@wordpress/keycodes';
 
@@ -33,38 +36,42 @@ import { ENTER } from '@wordpress/keycodes';
 import { requestImages } from '../utils';
 
 const ImageSuggestions = () => {
-	const [ value, setValue ] = useState([]);
 	const [ search, setSearch ] = useState( '' );
 	const [ isLoading, setIsLoading ] = useState( false );
+	const [ images, setImages ] = useState([]);
 
 	const {
-		images,
+		queuedImages,
 		imageKeywords,
 		activeImageKeyword,
+		selectedImages,
 		hasLoaded
 	} = useSelect( select => {
 		const {
 			getImages,
 			getImageKeywords,
 			getActiveImageKeyword,
+			getSelectedImages,
 			getProcessStatus
 		} = select( 'quickwp/data' );
 
 		const activeImageKeyword = getActiveImageKeyword();
 
-		const images = getImages( activeImageKeyword ) || [];
+		const queuedImages = getImages( activeImageKeyword ) || [];
 
 		return {
-			images,
+			queuedImages,
 			imageKeywords: getImageKeywords() || [],
 			activeImageKeyword,
+			selectedImages: getSelectedImages() || [],
 			hasLoaded: true === getProcessStatus( 'images' )
 		};
 	});
 
 	const {
 		onContinue,
-		setActiveImageKeyword
+		setActiveImageKeyword,
+		toggleSelectedImage
 	} = useDispatch( 'quickwp/data' );
 
 	const onSearch = async( query = search ) => {
@@ -82,6 +89,21 @@ const ImageSuggestions = () => {
 		await requestImages( query );
 		setIsLoading( false );
 	};
+
+	useEffect( () => {
+		const filteredImages = queuedImages.filter( queuedImage => {
+			return ! selectedImages.find( selectedImage => {
+				return selectedImage.id === queuedImage.id;
+			});
+		});
+
+		const mergedImages = [
+			...selectedImages,
+			...filteredImages
+		];
+
+		setImages( mergedImages );
+	}, [ queuedImages ]);
 
 	if ( ! hasLoaded ) {
 		return (
@@ -159,18 +181,12 @@ const ImageSuggestions = () => {
 								className={ classNames(
 									'flex flex-1 cursor-pointer',
 									{
-										'outline outline-offset-2 outline-2 outline-white grayscale': value.includes( image.id )
+										'outline outline-offset-2 outline-2 outline-white grayscale': selectedImages.includes( image )
 									}
 								) }
-								onClick={ () => {
-									if ( value.includes( image.id ) ) {
-										setValue( value.filter( ( item ) => item !== image.id ) );
-									} else {
-										setValue([ ...value, image.id ]);
-									}
-								}}
+								onClick={ () =>  toggleSelectedImage( image ) }
 							>
-								{ value.includes( image.id ) && (
+								{ selectedImages.includes( image ) && (
 									<div className="bg-white w-8 h-8 absolute flex justify-center items-center shadow-selected -right-1 -top-1 z-10">
 										<Icon
 											icon={ check }

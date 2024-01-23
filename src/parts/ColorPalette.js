@@ -5,7 +5,6 @@ import { __ } from '@wordpress/i18n';
 
 import {
 	Button,
-	ColorIndicator,
 	Spinner
 } from '@wordpress/components';
 
@@ -19,6 +18,7 @@ import { useEffect } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
+import ColorPicker from '../components/ColorPicker';
 import TemplatePreview from '../components/TemplatePreview';
 
 const ColorPalette = () => {
@@ -56,6 +56,8 @@ const ColorPalette = () => {
 
 	const { editEntityRecord } = useDispatch( 'core' );
 
+	const { setColorPalette } = useDispatch( 'quickwp/data' );
+
 	useEffect( () => {
 		if ( hasLoaded && Boolean( palette.length ) ) {
 			const colorPalette = palette.map( color => {
@@ -87,6 +89,21 @@ const ColorPalette = () => {
 		}
 	}, [ hasLoaded, palette ]);
 
+	const onChangeColor = ( value, slug ) => {
+		const newPalette = palette.map( color => {
+			if ( color.slug === slug ) {
+				return {
+					...color,
+					color: value
+				};
+			}
+
+			return color;
+		});
+
+		setColorPalette( newPalette );
+	};
+
 	const onSubmit = async() => {
 		onContinue();
 	};
@@ -111,9 +128,9 @@ const ColorPalette = () => {
 
 				<div className="flex items-center gap-4 mt-8">
 					{ palette.map( ( color ) => (
-						<ColorIndicator
-							colorValue={ color.color }
-							className="w-12 h-12"
+						<ColorPicker
+							value={ color.color }
+							onChange={ e => onChangeColor( e, color.slug ) }
 						/>
 					) ) }
 				</div>

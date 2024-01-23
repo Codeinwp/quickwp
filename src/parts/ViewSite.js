@@ -9,13 +9,27 @@ import { Button } from '@wordpress/components';
 
 import { useDispatch } from '@wordpress/data';
 
-import { downloadBlob } from '@wordpress/blob';
+const downloadBlob = ( filename, content, contentType = '' ) => {
+	if ( ! filename || ! content ) {
+		return;
+	}
 
+	const file = new window.Blob([ content ], { type: contentType });
+	const url = window.URL.createObjectURL( file );
+	const anchorElement = document.createElement( 'a' );
+	anchorElement.href = url;
+	anchorElement.download = filename;
+	anchorElement.style.display = 'none';
+	document.body.appendChild( anchorElement );
+	anchorElement.click();
+	document.body.removeChild( anchorElement );
+	window.URL.revokeObjectURL( url );
+};
 
 const ViewSite = () => {
 	const { createErrorNotice } = useDispatch( 'core/notices' );
 
-	async function handleExport() {
+	const handleExport = async() => {
 		try {
 			const response = await apiFetch({
 				path: '/wp-block-editor/v1/export',
@@ -47,7 +61,8 @@ const ViewSite = () => {
 
 			createErrorNotice( errorMessage, { type: 'snackbar' });
 		}
-	}
+	};
+
 	return (
 		<div className="flex flex-1 flex-row gap-8 items-center">
 			<div className="flex flex-col basis-full gap-8 justify-center">
