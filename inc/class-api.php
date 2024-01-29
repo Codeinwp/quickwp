@@ -409,7 +409,7 @@ class API {
 		// Find the target item.
 		$target = current( $data );
 
-		if ( false === $target || !isset($target->content) ) {
+		if ( false === $target || ! isset( $target->content ) ) {
 			return false;
 		}
 	
