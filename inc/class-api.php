@@ -177,14 +177,19 @@ class API {
 	public function status( \WP_REST_Request $request ) {
 		$data = $request->get_params();
 
-		$request = wp_remote_get( // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
-			QUICKWP_APP_API . 'wizard/status',
+		$api_url = QUICKWP_APP_API . 'wizard/status';
+
+		$query_params = array(
+			'thread_id' => $data['thread_id'],
+			'run_id'    => $data['run_id'],
+		);
+
+		$request_url = add_query_arg( $query_params, $api_url );
+
+		$request = wp_safe_remote_get(
+			$request_url,
 			array(
 				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
-				'body'    => array(
-					'thread_id' => $data['thread_id'],
-					'run_id'    => $data['run_id'],
-				),
 			)
 		);
 
@@ -216,13 +221,18 @@ class API {
 	public function get( \WP_REST_Request $request ) {
 		$data = $request->get_params();
 
-		$request = wp_remote_get(// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
-			QUICKWP_APP_API . 'wizard/get',
+		$api_url = QUICKWP_APP_API . 'wizard/get';
+
+		$query_params = array(
+			'thread_id' => $data['thread_id'],
+		);
+
+		$request_url = add_query_arg( $query_params, $api_url );
+
+		$request = wp_safe_remote_get(
+			$request_url,
 			array(
 				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
-				'body'    => array(
-					'thread_id' => $data['thread_id'],
-				),
 			)
 		);
 
@@ -254,13 +264,18 @@ class API {
 	public function templates( \WP_REST_Request $request ) {
 		$data = $request->get_params();
 
-		$request = wp_remote_get(// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
-			QUICKWP_APP_API . 'wizard/get',
+		$api_url = QUICKWP_APP_API . 'wizard/get';
+
+		$query_params = array(
+			'thread_id' => $data['thread_id'],
+		);
+
+		$request_url = add_query_arg( $query_params, $api_url );
+
+		$request = wp_safe_remote_get(
+			$request_url,
 			array(
 				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
-				'body'    => array(
-					'thread_id' => $data['thread_id'],
-				),
 			)
 		);
 
@@ -368,13 +383,18 @@ class API {
 	public function images( \WP_REST_Request $request ) {
 		$data = $request->get_params();
 
-		$request = wp_remote_get(// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
-			QUICKWP_APP_API . 'wizard/images',
+		$api_url = QUICKWP_APP_API . 'wizard/images';
+
+		$query_params = array(
+			'query' => $data['query'],
+		);
+
+		$request_url = add_query_arg( $query_params, $api_url );
+
+		$request = wp_safe_remote_get(
+			$api_url,
 			array(
 				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
-				'body'    => array(
-					'query' => $data['query'],
-				),
 			)
 		);
 
