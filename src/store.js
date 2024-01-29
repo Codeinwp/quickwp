@@ -42,8 +42,8 @@ const DEFAULT_STATE = {
 	activeImageKeyword: null,
 	selectedImages: [],
 	homepage: null,
-	siteTopic: null,
-	siteDescription: null,
+	siteTopic: '',
+	siteDescription: '',
 	isSavimg: false,
 	hasError: false
 };

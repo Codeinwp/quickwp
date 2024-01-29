@@ -129,6 +129,7 @@ const ColorPalette = () => {
 				<div className="flex items-center gap-4 mt-8">
 					{ palette.map( ( color ) => (
 						<ColorPicker
+							key={ color.slug }
 							value={ color.color }
 							onChange={ e => onChangeColor( e, color.slug ) }
 						/>

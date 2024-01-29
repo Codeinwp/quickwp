@@ -37,7 +37,7 @@ export const PageControlIcon = ({ isFilled = false }) => {
 					fill="none"
 					className="hover:fill-white"
 					stroke="white"
-					stroke-width="2"
+					strokeWidth="2"
 				/>
 			) }
 		</SVG>
@@ -53,8 +53,8 @@ export const Logo = () => {
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg">
 			<Path
-				fill-rule="evenodd"
-				clip-rule="evenodd"
+				fillRule="evenodd"
+				clipRule="evenodd"
 				d="M57.5 93C77.6584 93 94 76.6584 94 56.5C94 36.3416 77.6584 20 57.5 20C37.3416 20 21 36.3416 21 56.5C21 76.6584 37.3416 93 57.5 93ZM57.5 73.9565C67.141 73.9565 74.9565 66.141 74.9565 56.5C74.9565 46.859 67.141 39.0435 57.5 39.0435C47.859 39.0435 40.0435 46.859 40.0435 56.5C40.0435 66.141 47.859 73.9565 57.5 73.9565Z"
 				fill="white"
 			/>
@@ -68,6 +68,39 @@ export const Logo = () => {
 			/>
 		</SVG>
 	);
+};
+
+/**
+ * Sometimes OpenAI requests fail, so we try to redo them if that happens.
+ */
+const retryApiFetch = async( params = [], maxAttempts = 3, delay = 500 ) => {
+	const { setError } = dispatch( 'quickwp/data' );
+
+	let attempts = 0;
+
+	const makeRequest = async() => {
+		try {
+
+			const response = await apiFetch({
+				...params
+			});
+
+			return response;
+		} catch ( error ) {
+
+			attempts++;
+
+			if ( attempts < maxAttempts ) {
+				await new Promise( resolve => setTimeout( resolve, delay ) );
+				return makeRequest();
+			} else {
+				setError( true );
+				throw error;
+			}
+		}
+	};
+
+	return makeRequest();
 };
 
 const sendEvent = async( data ) => {
@@ -91,7 +124,7 @@ const getEvent = async( type ) => {
 	const threadID = select( 'quickwp/data' ).getThreadID( type );
 	const route = 'homepage' !== type ? 'get' : 'templates';
 
-	const response = await apiFetch({
+	const response = await retryApiFetch({
 		path: addQueryArgs( `${ window.quickwp.api }/${ route }`, {
 			'thread_id': threadID
 		})
@@ -189,7 +222,7 @@ const awaitEvent = async( type, interval = 5000 ) => {
 export const requestImages = async( query ) => {
 	const { setImages } = dispatch( 'quickwp/data' );
 
-	const response = await apiFetch({
+	const response = await retryApiFetch({
 		path: addQueryArgs( `${ window.quickwp.api }/images`, {
 			query
 		})

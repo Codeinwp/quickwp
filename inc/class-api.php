@@ -401,16 +401,15 @@ class API {
 	/**
 	 * Get JSON from response.
 	 *
-	 * @param array $data Response.
+	 * @param array<object> $data Response.
 	 * 
-	 * @return array|false
+	 * @return array<object>|false
 	 */
 	private static function process_json_from_response( $data ) {
 		// Find the target item.
 		$target = current( $data );
 
-		if ( false === $target ) {
-			// Handle the case where the target is not found.
+		if ( false === $target || !isset($target->content) ) {
 			return false;
 		}
 	
@@ -419,7 +418,12 @@ class API {
 
 		try {
 			$json_object = json_decode( $json_string, true );
-			return $json_object;
+
+			if ( is_array( $json_object ) ) {
+				return $json_object;
+			}
+
+			return false;
 		} catch ( \Exception $e ) {
 			// If parsing failed, try to find a JSON array in the string.
 			preg_match( '/\[(.|\n)*\]/', $json_string, $matches );
@@ -428,7 +432,9 @@ class API {
 				$json_array_string = $matches[0];
 				$json_object       = json_decode( $json_array_string, true );
 		
-				return $json_object;
+				if ( is_array( $json_object ) ) {
+					return $json_object;
+				}
 			}
 		}
 
