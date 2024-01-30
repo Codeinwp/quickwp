@@ -21,7 +21,14 @@ define( 'QUICKWP_APP_BASEFILE', __FILE__ );
 define( 'QUICKWP_APP_URL', plugins_url( '/', __FILE__ ) );
 define( 'QUICKWP_APP_PATH', __DIR__ );
 define( 'QUICKWP_APP_VERSION', '1.0.0' );
-define( 'QUICKWP_APP_API', 'https://aaf0-103-217-244-105.ngrok-free.app/api/' );
+
+if ( ! defined( 'QUICKWP_APP_API' ) ) {
+	define( 'QUICKWP_APP_API', 'https://aaf0-103-217-244-105.ngrok-free.app/api/' );
+}
+
+if ( ! defined( 'QUICKWP_APP_GUIDED_MODE' ) ) {
+	define( 'QUICKWP_APP_GUIDED_MODE', false );
+}
 
 $vendor_file = QUICKWP_APP_PATH . '/vendor/autoload.php';
 

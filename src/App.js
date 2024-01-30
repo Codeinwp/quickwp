@@ -3,7 +3,12 @@
  */
 import { __ } from '@wordpress/i18n';
 
-import { useSelect } from '@wordpress/data';
+import {
+	useDispatch,
+	useSelect
+} from '@wordpress/data';
+
+import { useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -15,20 +20,32 @@ import Header from './parts/Header';
 const App = () => {
 	const isEditorLoading = useIsSiteEditorLoading();
 
+	const { toggle } = useDispatch( 'core/preferences' );
+
 	const {
 		currentStep,
-		hasError
+		hasError,
+		hasWelcome
 	} = useSelect( select => {
 		const {
 			getStep,
 			hasError
 		} = select( 'quickwp/data' );
 
+		const { get } = select( 'core/preferences' );
+
 		return {
 			currentStep: getStep(),
-			hasError: hasError()
+			hasError: hasError(),
+			hasWelcome: get( 'core/edit-site', 'welcomeGuide' )
 		};
 	});
+
+	useEffect( () => {
+		if ( hasWelcome ) {
+			toggle( 'core/edit-site', 'welcomeGuide' );
+		}
+	}, [ hasWelcome ]);
 
 	const StepControls = currentStep?.view || null;
 

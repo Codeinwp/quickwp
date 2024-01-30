@@ -73,24 +73,28 @@ const ViewSite = () => {
 					) }
 				</h2>
 
-				<h3 className="text-fg text-2xl not-italic font-medium leading-10 max-w-5xl">
-					{ __(
-						'You can download the ZIP file and install it to your WordPress site.',
-						'quickwp'
-					) }
-				</h3>
+				{ Boolean( window.quickwp.isGuidedMode ) && (
+					<h3 className="text-fg text-2xl not-italic font-medium leading-10 max-w-5xl">
+						{ __(
+							'You can download the ZIP file and install it to your WordPress site.',
+							'quickwp'
+						) }
+					</h3>
+				) }
 
 				<div className="flex flex-row gap-4">
-					<Button
-						variant="primary"
-						onClick={ handleExport }
-					>
-						{ __( 'Download ZIP', 'quickwp' ) }
-					</Button>
+					{ Boolean( window.quickwp.isGuidedMode ) && (
+						<Button
+							variant="primary"
+							onClick={ handleExport }
+						>
+							{ __( 'Download ZIP', 'quickwp' ) }
+						</Button>
+					) }
 
 					<Button
 						variant="primary"
-						onClick={ () => {} }
+						href={ window.quickwp.siteUrl }
 					>
 						{ __( 'View Site', 'quickwp' ) }
 					</Button>

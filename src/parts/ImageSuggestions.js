@@ -8,7 +8,10 @@ import { check } from '@wordpress/icons';
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import {
+	__,
+	sprintf
+} from '@wordpress/i18n';
 
 import {
 	Button,
@@ -102,6 +105,10 @@ const ImageSuggestions = () => {
 			...filteredImages
 		];
 
+		if ( mergedImages.length && JSON.stringify( mergedImages ) === JSON.stringify( images ) ) {
+			return;
+		}
+
 		setImages( mergedImages );
 	}, [ queuedImages ]);
 
@@ -179,15 +186,17 @@ const ImageSuggestions = () => {
 							<div
 								key={ image.id }
 								className={ classNames(
-									'flex flex-1 cursor-pointer',
+									'flex flex-col flex-1 cursor-pointer',
 									{
-										'outline outline-offset-2 outline-2 outline-white grayscale': selectedImages.includes( image )
+										'grayscale': selectedImages.includes( image )
 									}
 								) }
 								onClick={ () =>  toggleSelectedImage( image ) }
 							>
 								{ selectedImages.includes( image ) && (
-									<div className="bg-white w-8 h-8 absolute flex justify-center items-center shadow-selected -right-1 -top-1 z-10">
+									<div
+										className="bg-white w-8 h-8 absolute flex justify-center items-center shadow-selected -right-1 -top-1 z-10"
+									>
 										<Icon
 											icon={ check }
 											size={ 24 }
@@ -196,9 +205,30 @@ const ImageSuggestions = () => {
 								) }
 
 								<img
-									className="object-cover aspect-square"
+									className={ classNames(
+										'object-cover aspect-square',
+										{
+											'outline outline-offset-2 outline-2 outline-white': selectedImages.includes( image )
+										}
+									) }
 									src={ image.src.original }
+									alt={ image.alt }
 								/>
+
+								<p className="text-slate-500 hover:text-slate-700 no-underline not-italic font-medium text-center pt-2">
+									<a
+										href={ image.url }
+										target="_blank"
+									>
+										{ sprintf(
+											__(
+												'Photo by %s on Pexels',
+												'quickwp'
+											),
+											image.photographer
+										)}
+									</a>
+								</p>
 							</div>
 						) ) }
 					</div>

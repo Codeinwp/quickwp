@@ -329,8 +329,13 @@ class API {
 				foreach ( $images as $image ) {
 					add_filter(
 						'quickwp/' . $image['slug'],
-						function () use( $image ) {
-							return esc_url( $image['src'] );
+						function ( $value ) use( $image ) {
+							// Check if image slug is a valid URL.
+							if ( filter_var( $image['src'], FILTER_VALIDATE_URL ) ) {
+								return esc_url( $image['src'] );
+							}
+
+							return $value;
 						} 
 					);
 				}
@@ -392,7 +397,7 @@ class API {
 		$request_url = add_query_arg( $query_params, $api_url );
 
 		$request = wp_safe_remote_get(
-			$api_url,
+			$request_url,
 			array(
 				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
 			)

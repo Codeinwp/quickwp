@@ -3,7 +3,9 @@
 	"version": "1.0.0",
 	"description": "Build websites quickly.",
 	"scripts": {
-		"build": "wp-scripts build",
+		"build": "npm-run-all build:*",
+		"build:backend": "wp-scripts build src/index.js --output-path=build/backend --output-filename=index.js",
+		"build:frontend": "wp-scripts build src/frontend/index.js --output-path=build/frontend --output-filename=frontend.js",
 		"check-engines": "wp-scripts check-engines",
 		"check-licenses": "wp-scripts check-licenses",
 		"format": "wp-scripts format",
@@ -13,7 +15,9 @@
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
-		"start": "wp-scripts start",
+		"start": "npm-run-all --parallel start:*",
+		"start:backend": "wp-scripts start src/index.js --output-path=build/backend --output-filename=index.js",
+		"start:frontend": "wp-scripts start src/frontend/index.js --output-path=build/frontend --output-filename=frontend.js",
 		"test:e2e": "wp-scripts test-e2e",
 		"test:unit": "wp-scripts test-unit-js",
 		"dist": "bash bin/dist.sh"
@@ -31,6 +35,7 @@
 	"devDependencies": {
 		"@wordpress/scripts": "^26.19.0",
 		"eslint-config-wordpress": "^2.0.0",
+		"npm-run-all": "^4.1.5",
 		"simple-git-hooks": "^2.9.0",
 		"tailwindcss": "^3.4.0"
 	},
