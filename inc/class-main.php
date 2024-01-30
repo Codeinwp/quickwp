@@ -37,10 +37,10 @@ class Main {
 	private function register_hooks() {
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_assets' ) );
 
-		if ( QUICKWP_APP_GUIDED_MODE ) {
+		if ( defined( 'QUICKWP_APP_GUIDED_MODE' ) && QUICKWP_APP_GUIDED_MODE ) {
 			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 			add_action( 'admin_init', array( $this, 'guided_access' ) );
-			add_action( 'show_admin_bar', '__return_false' );
+			add_filter( 'show_admin_bar', '__return_false' ); // phpcs:ignore WordPressVIPMinimum.UserExperience.AdminBarRemoval.RemovalDetected
 		}
 	}
 
@@ -85,7 +85,7 @@ class Main {
 			array(
 				'api'          => $this->api->get_endpoint(),
 				'siteUrl'      => get_site_url(),
-				'isGuidedMode' => QUICKWP_APP_GUIDED_MODE
+				'isGuidedMode' => defined( 'QUICKWP_APP_GUIDED_MODE' ) && QUICKWP_APP_GUIDED_MODE,
 			)
 		);
 	}
@@ -126,9 +126,8 @@ class Main {
 			return;
 		}
 
-		// Allow access to themes.php page only
 		if ( 'site-editor.php' !== $pagenow ) {
-			wp_redirect( admin_url( 'site-editor.php?quickwp=true&canvas=edit' ) );
+			wp_safe_redirect( admin_url( 'site-editor.php?quickwp=true&canvas=edit' ) );
 			exit;
 		}
 	}

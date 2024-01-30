@@ -5,5 +5,7 @@ parameters:
 	bootstrapFiles:
 		- %currentWorkingDirectory%/tests/php/static-analysis-stubs/quickwp.php
 	checkGenericClassInNonGenericObjectType: false
+	dynamicConstantNames:
+		- QUICKWP_APP_GUIDED_MODE
 includes:
 	- %currentWorkingDirectory%/vendor/szepeviktor/phpstan-wordpress/extension.neon
