@@ -109,7 +109,7 @@ const sendEvent = async( data ) => {
 		setThreadID
 	} = dispatch( 'quickwp/data' );
 
-	const response = await apiFetch({
+	const response = await retryApiFetch({
 		path: `${ window.quickwp.api }/send`,
 		method: 'POST',
 		data: { ...data }
@@ -138,7 +138,7 @@ const getEventStatus = async( type ) => {
 	const runID = select( 'quickwp/data' ).getRunID( type );
 	const { setProcessStatus } = dispatch( 'quickwp/data' );
 
-	const response = await apiFetch({
+	const response = await retryApiFetch({
 		path: addQueryArgs( `${ window.quickwp.api }/status`, {
 			'thread_id': threadID,
 			'run_id': runID
@@ -277,9 +277,6 @@ export const generateHomepage = async() => {
 	const siteTopic = select( 'quickwp/data' ).getSiteTopic();
 	const siteDescription = select( 'quickwp/data' ).getSiteDescription();
 	const images = select( 'quickwp/data' ).getSelectedImages();
-	const currentTemplate = select( 'core/edit-site' ).getEditedPostId();
-
-	const { editEntityRecord } = dispatch( 'core' );
 
 	const imagesAr = images.map( image => ({
 		src: image.src.original,
@@ -306,25 +303,49 @@ export const generateHomepage = async() => {
 		return;
 	}
 
-	let homepageTemplate = '';
-	homepageTemplate += '<!-- wp:template-part {"slug":"header","theme":"quickwp-theme","tagName":"header","area":"header"} /-->';
-	homepageTemplate += response.data;
-	homepageTemplate += '<!-- wp:template-part {"slug":"footer","theme":"quickwp-theme","tagName":"footer","area":"footer"} /-->';
+	let homepageTemplates = [];
 
-	editEntityRecord( 'postType', 'wp_template', currentTemplate, {
-		'content': homepageTemplate
+	response.data.forEach( item => {
+		let homepageTemplate = formatHomepage( item.patterns );
+
+		const template = {
+			slug: item.slug,
+			content: homepageTemplate
+		};
+
+		homepageTemplates.push( template );
 	});
 
-	setHomepage( homepageTemplate );
+	setHomepage( homepageTemplates );
 	setProcessStatus( 'homepage', true );
 };
 
 export const saveChanges = async() => {
 	const { __experimentalGetDirtyEntityRecords } = select( 'core' );
 
-	const { saveEditedEntityRecord } = dispatch( 'core' );
+	const currentTemplate = select( 'core/edit-site' ).getEditedPostId();
+
+	const {
+		getHomepage,
+		getSelectedHomepage
+	} = select( 'quickwp/data' );
+
+	const {
+		editEntityRecord,
+		saveEditedEntityRecord
+	} = dispatch( 'core' );
 
 	const { setSaving } = dispatch( 'quickwp/data' );
+
+	const homepage = getSelectedHomepage();
+
+	const templates = getHomepage();
+
+	const selectedHomepage = templates.find( template => template.slug === homepage );
+
+	editEntityRecord( 'postType', 'wp_template', currentTemplate, {
+		'content': selectedHomepage.content
+	});
 
 	const edits = __experimentalGetDirtyEntityRecords();
 
@@ -335,4 +356,13 @@ export const saveChanges = async() => {
 	}) );
 
 	setSaving( false );
+};
+
+const formatHomepage = template => {
+	let homepageTemplate = '';
+	homepageTemplate += '<!-- wp:template-part {"slug":"header","theme":"quickwp-theme","tagName":"header","area":"header"} /-->';
+	homepageTemplate += template;
+	homepageTemplate += '<!-- wp:template-part {"slug":"footer","theme":"quickwp-theme","tagName":"footer","area":"footer"} /-->';
+
+	return homepageTemplate;
 };

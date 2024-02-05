@@ -42,6 +42,8 @@ class Main {
 			add_action( 'admin_init', array( $this, 'guided_access' ) );
 			add_filter( 'show_admin_bar', '__return_false' ); // phpcs:ignore WordPressVIPMinimum.UserExperience.AdminBarRemoval.RemovalDetected
 		}
+
+		add_action( 'wp_print_footer_scripts', array( $this, 'print_footer_scripts' ) );
 	}
 
 	/**
@@ -112,6 +114,62 @@ class Main {
 			$asset_file['version'],
 			true
 		);
+	}
+
+	/**
+	 * Print footer scripts.
+	 * 
+	 * @return void
+	 */
+	public function print_footer_scripts() {
+		if ( ! is_admin() ) {
+			return;
+		} 
+
+		$current_screen = get_current_screen();
+	
+		if (
+			! current_user_can( 'manage_options' ) ||
+			! isset( $current_screen->id ) ||
+			'site-editor' !== $current_screen->id
+		) {
+			return;
+		}
+
+		?>
+		<script>
+			/**
+			 * We use this script to adjust the vh units in the DOM to match the actual viewport height in the editor.
+			 * This is necessary because the editor's viewport height is not the same as the browser's viewport height.
+			 * In some blocks we use the vh unit to set the height of elements, and we need to adjust it to match the editor's viewport height.
+			 */
+			const adjustVHUnits = () => {
+				const parentVHValue = getComputedStyle( document.documentElement).getPropertyValue( '--parent-vh' );
+				const parentVH = parseInt( parentVHValue, 10 );
+
+				if ( isNaN( parentVH ) ) {
+					return;
+				}
+
+				const convertVHtoPixels = ( vhValue ) => ( vhValue / 100 ) * parentVH;
+
+				document.querySelectorAll( '*' ).forEach( el => {
+					const style = el.getAttribute( 'style' );
+
+					if ( style && style.includes( 'vh' ) ) {
+						const updatedStyle = style.replace( /(\d+(\.\d+)?)vh/g, ( match, vhValue ) => {
+							const pixelValue = convertVHtoPixels( parseFloat( vhValue ) );
+							return `${ pixelValue }px`;
+						});
+
+						el.setAttribute( 'style', updatedStyle );
+					}
+				});
+			}
+
+			document.addEventListener( 'DOMContentLoaded', adjustVHUnits );
+		</script>
+		<?php
 	}
 
 	/**

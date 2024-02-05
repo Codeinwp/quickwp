@@ -41,7 +41,8 @@ const DEFAULT_STATE = {
 	imageKeywords: [],
 	activeImageKeyword: null,
 	selectedImages: [],
-	homepage: null,
+	homepage: [],
+	selectedHomepage: null,
 	siteTopic: '',
 	siteDescription: '',
 	isSavimg: false,
@@ -174,6 +175,12 @@ const actions = {
 			homepage
 		};
 	},
+	setSelectedHomepage( selectedHomepage ) {
+		return {
+			type: 'SET_SELECTED_HOMEPAGE',
+			selectedHomepage
+		};
+	},
 	setError( hasError ) {
 		return {
 			type: 'SET_ERROR',
@@ -284,6 +291,11 @@ const store = createReduxStore( 'quickwp/data', {
 				...state,
 				homepage: action.homepage
 			};
+		case 'SET_SELECTED_HOMEPAGE':
+			return {
+				...state,
+				selectedHomepage: action.selectedHomepage
+			};
 		case 'SET_THREAD_ID':
 			return {
 				...state,
@@ -351,6 +363,9 @@ const store = createReduxStore( 'quickwp/data', {
 		},
 		getHomepage( state ) {
 			return state.homepage;
+		},
+		getSelectedHomepage( state ) {
+			return state.selectedHomepage;
 		},
 		hasError( state ) {
 			return state.hasError;

@@ -1,10 +1,19 @@
 /**
+ * External dependencies.
+ */
+import classNames from 'classnames';
+
+import { rotateRight } from '@wordpress/icons';
+
+/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
 
 import {
 	Button,
+	Disabled,
+	Icon,
 	Spinner
 } from '@wordpress/components';
 
@@ -13,15 +22,21 @@ import {
 	useSelect
 } from '@wordpress/data';
 
-import { useEffect } from '@wordpress/element';
+import {
+	useEffect,
+	useState
+} from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
+import { generateColorPalette } from '../utils';
 import ColorPicker from '../components/ColorPicker';
 import TemplatePreview from '../components/TemplatePreview';
 
 const ColorPalette = () => {
+	const [ isRegenerating, setIsRegenerating ] = useState( false );
+
 	const { onContinue } = useDispatch( 'quickwp/data' );
 
 	const {
@@ -108,6 +123,12 @@ const ColorPalette = () => {
 		onContinue();
 	};
 
+	const onRegenerate = async() => {
+		setIsRegenerating( true );
+		await generateColorPalette();
+		setIsRegenerating( false );
+	};
+
 	if ( ! hasLoaded ) {
 		return (
 			<div className="flex flex-1 flex-row items-center justify-center">
@@ -117,33 +138,55 @@ const ColorPalette = () => {
 	}
 
 	return (
-		<div className="flex flex-1 flex-row gap-8 items-center">
-			<div className="flex flex-col basis-full gap-8 justify-center">
-				<h2 className="text-fg text-4xl not-italic font-medium leading-10 max-w-5xl">
-					{ __(
-						'Let\'s give your site a color that fits to your brand.',
-						'quickwp'
-					) }
-				</h2>
+		<div className="flex flex-1 flex-row gap-12 items-center">
+			<Disabled isDisabled={ isRegenerating }>
+				<div className="flex flex-col basis-1/3 gap-8 justify-center">
+					<h2 className="text-fg text-4xl not-italic font-medium leading-10 max-w-5xl">
+						{ __(
+							'Let\'s give your site a color that fits to your brand.',
+							'quickwp'
+						) }
+					</h2>
 
-				<div className="flex items-center gap-4 mt-8">
-					{ palette.map( ( color ) => (
-						<ColorPicker
-							key={ color.slug }
-							value={ color.color }
-							onChange={ e => onChangeColor( e, color.slug ) }
+					<div className="flex items-center gap-4 mt-8">
+						{ palette.map( ( color ) => (
+							<ColorPicker
+								key={ color.slug }
+								value={ color.color }
+								onChange={ e => onChangeColor( e, color.slug ) }
+							/>
+						) ) }
+
+						<Icon
+							icon={ rotateRight }
+							className={
+								classNames(
+									'cursor-pointer fill-white',
+									{
+										'animate-spin': isRegenerating
+									}
+								)
+							}
+							onClick={ onRegenerate }
 						/>
-					) ) }
-				</div>
+					</div>
 
-				<Button variant="primary" onClick={ onSubmit }>
-					{ __( 'Continue', 'quickwp' ) }
-				</Button>
-			</div>
+					<Button
+						variant="primary"
+						onClick={ onSubmit }
+						isDisabled={ isRegenerating }
+					>
+						{ __( 'Continue', 'quickwp' ) }
+
+						{ isRegenerating && <Spinner />}
+					</Button>
+				</div>
+			</Disabled>
 
 			<TemplatePreview
 				template={ template }
 				canScroll={ true }
+				className="!basis-2/3"
 			/>
 		</div>
 	);

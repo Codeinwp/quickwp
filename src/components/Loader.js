@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import classnames from 'classnames';
+import classNames from 'classnames';
 
 /**
  * WordPress dependencies.
@@ -36,7 +36,7 @@ const Loader = () => {
 			{ Array.from({ length: numberOfPages }).map( ( _, page ) => (
 				<li
 					key={ page }
-					className={ classnames(
+					className={ classNames(
 						'inline-flex m-0 justify-center items-center text-fg h-6 w-6 !min-w-0 !min-h-0 transition-all',
 						{
 							'opacity-30': page !== currentPage

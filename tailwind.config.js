@@ -4,17 +4,15 @@ module.exports = {
 	theme: {
 		extend: {
 			aspectRatio: {
-				vert: [ 3, 4 ]
-			},
-			boxShadow: {
-				selected: '-3px 3px 0px -1px #000'
+				vert: '3/4'
 			},
 			colors: {
 				bg: '#000000',
 				fg: '#FFFFFF',
 				secondary: '#232323',
 				'bg-alt': '#2F2F2F',
-				'fg-alt': '#E0E0E0'
+				'fg-alt': '#E0E0E0',
+				active: '#4663F8'
 			},
 			maxHeight: {
 				'md': '32rem',

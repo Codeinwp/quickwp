@@ -141,7 +141,7 @@ class API {
 		$request = wp_remote_post(
 			QUICKWP_APP_API . 'wizard/send',
 			array(
-				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
 				'body'    => array(
 					'step'    => $data['step'],
 					'message' => $data['message'],
@@ -189,7 +189,7 @@ class API {
 		$request = wp_safe_remote_get(
 			$request_url,
 			array(
-				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
 			)
 		);
 
@@ -232,7 +232,7 @@ class API {
 		$request = wp_safe_remote_get(
 			$request_url,
 			array(
-				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
 			)
 		);
 
@@ -275,7 +275,7 @@ class API {
 		$request = wp_safe_remote_get(
 			$request_url,
 			array(
-				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
 			)
 		);
 
@@ -297,12 +297,128 @@ class API {
 		$items = self::process_json_from_response( $response->data );
 
 		if ( ! $items ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error Parsing JSON', 'quickwp' ) ), 500 );
+		}
+
+		$result = array();
+
+		foreach( $items as $item ) {
+			$pattern = self::extract_patterns( $item );
+
+			if ( ! $pattern ) {
+				continue;
+			}
+
+			$result[] = $pattern;
+		}
+
+		return new \WP_REST_Response(
+			array(
+				'status' => 'success',
+				'data'   => $result,
+			),
+			200 
+		);
+	}
+
+	/**
+	 * Get images.
+	 * 
+	 * @param \WP_REST_Request $request Request.
+	 * 
+	 * @return \WP_REST_Response
+	 */
+	public function images( \WP_REST_Request $request ) {
+		$data = $request->get_params();
+
+		$api_url = QUICKWP_APP_API . 'wizard/images';
+
+		$query_params = array(
+			'query' => $data['query'],
+		);
+
+		$request_url = add_query_arg( $query_params, $api_url );
+
+		$request = wp_safe_remote_get(
+			$request_url,
+			array(
+				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+			)
+		);
+
+		if ( is_wp_error( $request ) ) {
+			return new \WP_REST_Response( array( 'error' => $request->get_error_message() ), 500 );
+		}
+
+		/** 
+		 * Holds the response as a standard class object
+		 *
+		 * @var \stdClass $response 
+		 */
+		$response = json_decode( wp_remote_retrieve_body( $request ) );
+
+		if ( ! isset( $response->photos ) ) {
 			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
+		}
+
+		return new \WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Get JSON from response.
+	 *
+	 * @param array<object> $data Response.
+	 * 
+	 * @return array<object>|false
+	 */
+	private static function process_json_from_response( $data ) {
+		// Find the target item.
+		$target = current( $data );
+
+		if ( false === $target || ! isset( $target->content ) ) {
+			return false;
+		}
+	
+		// Extract the JSON string.
+		$json_string = $target->content[0]->text->value;
+
+		try {
+			$json_object = json_decode( $json_string, true );
+
+			if ( is_array( $json_object ) ) {
+				return $json_object;
+			}
+
+			throw new \Exception( 'Invalid JSON' );
+		} catch ( \Exception $e ) {
+			if ( substr( $json_string, 0, 7 ) === '```json' && substr( trim( $json_string ), -3 ) === '```' ) {
+				$cleaned_json = trim( str_replace( [ '```json', '```' ], '', $json_string ) );
+				$json_object = json_decode( $cleaned_json, true );
+
+				if ( is_array( $json_object ) ) {
+					return $json_object;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Extract Patterns.
+	 * 
+	 * @param array<object> $items Items.
+	 * 
+	 * @return array
+	 */
+	private static function extract_patterns( $items ) {
+		if ( ! isset( $items['slug'] ) || ! isset( $items['data'] ) ) {
+			return;
 		}
 
 		$patterns_used = array();
 
-		foreach ( $items as $item ) {
+		foreach ( $items['data'] as $item ) {
 			if ( ! isset( $item['slug'] ) || ! isset( $item['order'] ) || ! isset( $item['strings'] ) ) {
 				continue;
 			}
@@ -330,8 +446,7 @@ class API {
 					add_filter(
 						'quickwp/' . $image['slug'],
 						function ( $value ) use( $image ) {
-							// Check if image slug is a valid URL.
-							if ( filter_var( $image['src'], FILTER_VALIDATE_URL ) ) {
+							if ( filter_var( $image['src'], FILTER_VALIDATE_URL ) && ( strpos( $image['src'], 'pexels.com' ) !== false ) ) {
 								return esc_url( $image['src'] );
 							}
 
@@ -369,100 +484,9 @@ class API {
 			$filtered_patterns[] = $pattern_content;
 		}
 
-		return new \WP_REST_Response(
-			array(
-				'status' => 'success',
-				'data'   => implode( '', $filtered_patterns ),
-			),
-			200 
+		return array(
+			'slug'     => $items['slug'],
+			'patterns' => implode( '', $filtered_patterns ),
 		);
-	}
-
-	/**
-	 * Get images.
-	 * 
-	 * @param \WP_REST_Request $request Request.
-	 * 
-	 * @return \WP_REST_Response
-	 */
-	public function images( \WP_REST_Request $request ) {
-		$data = $request->get_params();
-
-		$api_url = QUICKWP_APP_API . 'wizard/images';
-
-		$query_params = array(
-			'query' => $data['query'],
-		);
-
-		$request_url = add_query_arg( $query_params, $api_url );
-
-		$request = wp_safe_remote_get(
-			$request_url,
-			array(
-				'timeout' => 10, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
-			)
-		);
-
-		if ( is_wp_error( $request ) ) {
-			return new \WP_REST_Response( array( 'error' => $request->get_error_message() ), 500 );
-		}
-
-		/** 
-		 * Holds the response as a standard class object
-		 *
-		 * @var \stdClass $response 
-		 */
-		$response = json_decode( wp_remote_retrieve_body( $request ) );
-
-		if ( ! isset( $response->photos ) || count( $response->photos ) === 0 ) {
-			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
-		}
-
-
-
-		return new \WP_REST_Response( $response, 200 );
-	}
-
-	/**
-	 * Get JSON from response.
-	 *
-	 * @param array<object> $data Response.
-	 * 
-	 * @return array<object>|false
-	 */
-	private static function process_json_from_response( $data ) {
-		// Find the target item.
-		$target = current( $data );
-
-		if ( false === $target || ! isset( $target->content ) ) {
-			return false;
-		}
-	
-		// Extract the JSON string.
-		$json_string = $target->content[0]->text->value;
-
-		try {
-			$json_object = json_decode( $json_string, true );
-
-			if ( is_array( $json_object ) ) {
-				return $json_object;
-			}
-
-			return false;
-		} catch ( \Exception $e ) {
-			// If parsing failed, try to find a JSON array in the string.
-			preg_match( '/\[(.|\n)*\]/', $json_string, $matches );
-		
-			if ( ! empty( $matches ) ) {
-				$json_array_string = $matches[0];
-				$json_object       = json_decode( $json_array_string, true );
-		
-				if ( is_array( $json_object ) ) {
-					return $json_object;
-				}
-			}
-		}
-
-		return false;
 	}
 }

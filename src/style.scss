@@ -14,9 +14,13 @@
 			@apply bg-transparent max-w-5xl h-24 border-0 text-2xl not-italic font-normal text-fg shadow-none resize-none;
 		}
 
-		&.is-dark {
+		&.is-light {
 			.components-text-control__input {
-				@apply text-fg-alt bg-bg-alt h-10 w-full max-w-full text-xs p-3;
+				@apply text-black bg-white h-10 w-full max-w-full text-xs p-3;
+
+				&::placeholder {
+					@apply text-black/50;
+				}
 			}
 		}
 	}
@@ -59,7 +63,7 @@
 			@apply text-xs leading-none px-4 py-2;
 
 			&.is-active {
-				@apply bg-fg text-bg;
+				@apply bg-active text-white;
 			}
 		}
 	}
