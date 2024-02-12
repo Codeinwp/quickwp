@@ -17,12 +17,20 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'QUICKWP_BASEFILE', __FILE__ );
-define( 'QUICKWP_URL', plugins_url( '/', __FILE__ ) );
-define( 'QUICKWP_PATH', __DIR__ );
-define( 'QUICKWP_VERSION', '1.0.0' );
+define( 'QUICKWP_APP_BASEFILE', __FILE__ );
+define( 'QUICKWP_APP_URL', plugins_url( '/', __FILE__ ) );
+define( 'QUICKWP_APP_PATH', __DIR__ );
+define( 'QUICKWP_APP_VERSION', '1.0.0' );
 
-$vendor_file = QUICKWP_PATH . '/vendor/autoload.php';
+if ( ! defined( 'QUICKWP_APP_API' ) ) {
+	define( 'QUICKWP_APP_API', 'https://quickwp.com/api/' );
+}
+
+if ( ! defined( 'QUICKWP_APP_GUIDED_MODE' ) ) {
+	define( 'QUICKWP_APP_GUIDED_MODE', false );
+}
+
+$vendor_file = QUICKWP_APP_PATH . '/vendor/autoload.php';
 
 if ( is_readable( $vendor_file ) ) {
 	require_once $vendor_file;
