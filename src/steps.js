@@ -25,11 +25,6 @@ const STEPS = [
 		view: SiteDescription
 	},
 	{
-		value: 'color_palette',
-		label: __( 'Color Palette', 'quickwp' ),
-		view: ColorPalette
-	},
-	{
 		value: 'image_suggestions',
 		label: __( 'Image Suggestions', 'quickwp' ),
 		view: ImageSuggestions
@@ -38,6 +33,11 @@ const STEPS = [
 		value: 'frontpage_template',
 		label: __( 'Front Page Template', 'quickwp' ),
 		view: Template
+	},
+	{
+		value: 'color_palette',
+		label: __( 'Color Palette', 'quickwp' ),
+		view: ColorPalette
 	},
 	{
 		value: 'view_site',

@@ -46,8 +46,6 @@ const ColorPalette = () => {
 		template,
 		hasLoaded
 	} = useSelect( ( select ) => {
-		const { getBlocks } = select( 'core/block-editor' );
-
 		const {
 			__experimentalGetCurrentGlobalStylesId,
 			__experimentalGetCurrentThemeBaseGlobalStyles
@@ -55,7 +53,8 @@ const ColorPalette = () => {
 
 		const {
 			getColorPalette,
-			getProcessStatus
+			getProcessStatus,
+			getHomepage
 		} = select( 'quickwp/data' );
 
 		const globalStylesId = __experimentalGetCurrentGlobalStylesId();
@@ -64,8 +63,8 @@ const ColorPalette = () => {
 			globalStylesId,
 			defaultStyles: __experimentalGetCurrentThemeBaseGlobalStyles(),
 			palette: getColorPalette(),
-			template: getBlocks(),
-			hasLoaded: true === getProcessStatus( 'color_palette' )
+			template: getHomepage() || [],
+			hasLoaded: true === getProcessStatus( 'color_palette' ) && true === getProcessStatus( 'homepage' )
 		};
 	});
 
@@ -174,7 +173,7 @@ const ColorPalette = () => {
 					<Button
 						variant="primary"
 						onClick={ onSubmit }
-						isDisabled={ isRegenerating }
+						disabled={ isRegenerating }
 					>
 						{ __( 'Continue', 'quickwp' ) }
 

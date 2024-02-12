@@ -10,7 +10,10 @@ import { parse } from '@wordpress/blocks';
 
 import { BlockPreview } from '@wordpress/block-editor';
 
-import { useMemo } from '@wordpress/element';
+import {
+	useMemo,
+	useRef
+} from '@wordpress/element';
 
 const TemplatePreview = ({
 	template,
@@ -19,12 +22,39 @@ const TemplatePreview = ({
 	className = '',
 	onClick
 }) => {
+	const previewRef = useRef( null );
+
 	const parsedTemplate = useMemo( () => {
 		return Array.isArray( template ) ? template : parse( template );
 	}, [ template ]);
 
+	const scrollToBottom = () => {
+		const contentDocument = previewRef.current;
+
+		if ( ! canScroll && contentDocument ) {
+			contentDocument.scrollTo({
+				top: contentDocument.scrollHeight,
+				behavior: 'smooth'
+			});
+		}
+	};
+
+	const scrollToTop = () => {
+		const contentDocument = previewRef.current;
+
+		if ( ! canScroll && contentDocument ) {
+			contentDocument.scrollTo({
+				top: 0,
+				behavior: 'smooth'
+			});
+		}
+	};
+
 	return (
 		<div
+			ref={ previewRef }
+			onMouseEnter={ scrollToBottom }
+			onMouseLeave={ scrollToTop }
 			className={ classNames(
 				'block basis-full rounded-xl overflow-hidden max-h-80vh pointer-events-auto cursor-pointer',
 				{

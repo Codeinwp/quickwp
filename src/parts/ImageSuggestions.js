@@ -94,22 +94,14 @@ const ImageSuggestions = () => {
 	};
 
 	useEffect( () => {
-		const filteredImages = queuedImages.filter( queuedImage => {
-			return ! selectedImages.find( selectedImage => {
-				return selectedImage.id === queuedImage.id;
-			});
-		});
-
-		const mergedImages = [
+		const newImages = [
 			...selectedImages,
-			...filteredImages
+			...queuedImages.filter( qImage => ! selectedImages.find( sImage => sImage.id === qImage.id ) )
 		];
 
-		if ( mergedImages.length && JSON.stringify( mergedImages ) === JSON.stringify( images ) ) {
-			return;
+		if ( newImages.length !== images.length || ! newImages.every( ( img, index ) => img.id === images[index]?.id ) ) {
+			setImages( newImages );
 		}
-
-		setImages( mergedImages );
 	}, [ queuedImages ]);
 
 	if ( ! hasLoaded ) {

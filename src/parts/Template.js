@@ -21,29 +21,27 @@ import TemplatePreview from '../components/TemplatePreview';
 const Template = () => {
 	const {
 		onContinue,
-		setSelectedHomepage
+		setSelectedTemplate
 	} = useDispatch( 'quickwp/data' );
 
 	const {
 		templates,
-		selectedHomepage,
-		isSaving,
+		selectedTemplate,
 		hasLoaded
 	} = useSelect( ( select ) => {
 		const {
-			getHomepage,
+			getTemplate,
 			isSaving,
 			getProcessStatus,
-			getSelectedHomepage
+			getSelectedTemplate
 		} = select( 'quickwp/data' );
 
-		const templates = getHomepage();
+		const templates = getTemplate();
 
 		return {
 			templates,
-			selectedHomepage: getSelectedHomepage(),
-			isSaving: isSaving(),
-			hasLoaded: true === getProcessStatus( 'homepage' )
+			selectedTemplate: getSelectedTemplate(),
+			hasLoaded: true === getProcessStatus( 'templates' )
 		};
 	}, []);
 
@@ -65,47 +63,28 @@ const Template = () => {
 					) }
 				</h2>
 
-				<div className="flex flex-row gap-4">
-					<Button
-						variant="primary"
-						disabled={ isSaving || ! selectedHomepage }
-						onClick={ onContinue }
-					>
-						{ __( 'Continue', 'quickwp' ) }
-					</Button>
-
-					{ selectedHomepage && (
-						<Button
-							variant="primary"
-							onClick={ () => setSelectedHomepage( null ) }
-						>
-							{ __( 'Go Back', 'quickwp' ) }
-						</Button>
-					) }
-				</div>
+				<Button
+					variant="primary"
+					disabled={ ! selectedTemplate }
+					onClick={ onContinue }
+				>
+					{ __( 'Continue', 'quickwp' ) }
+				</Button>
 			</div>
 
-			{ selectedHomepage ? (
-				<div className="grid grid-cols-1 p-1 basis-2/3 max-h-80vh">
-					<TemplatePreview
-						template={ templates.find( template => template.slug === selectedHomepage ).content }
-						canScroll={ true }
-					/>
-				</div>
-			) : (
-				<div className="grid grid-cols-2 gap-4 p-1 basis-2/3 overflow-scroll max-h-80vh">
-					{ templates.map( template => {
-						return (
-							<TemplatePreview
-								key={ template.slug }
-								template={ template.content }
-								onClick={ () => setSelectedHomepage( template.slug )}
-								className="aspect-vert"
-							/>
-						);
-					}) }
-				</div>
-			) }
+			<div className="grid grid-cols-2 gap-4 p-1 basis-2/3 overflow-scroll max-h-80vh">
+				{ templates.map( template => {
+					return (
+						<TemplatePreview
+							key={ template.slug }
+							template={ template.content }
+							onClick={ () => setSelectedTemplate( template.slug )}
+							isSelected={ template.slug === selectedTemplate }
+							className="aspect-vert"
+						/>
+					);
+				}) }
+			</div>
 		</div>
 	);
 };

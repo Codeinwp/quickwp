@@ -87,6 +87,7 @@ class Main {
 			array(
 				'api'          => $this->api->get_endpoint(),
 				'siteUrl'      => get_site_url(),
+				'themeSlug'    => get_template(),
 				'isGuidedMode' => defined( 'QUICKWP_APP_GUIDED_MODE' ) && QUICKWP_APP_GUIDED_MODE,
 			)
 		);

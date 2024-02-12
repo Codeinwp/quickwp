@@ -7,7 +7,6 @@ import {
 	dispatch,
 	select
 } from '@wordpress/data';
-import { home } from '@wordpress/icons';
 
 import {
 	Circle,
@@ -116,17 +115,30 @@ const sendEvent = async( data ) => {
 	});
 
 	setThreadID( data.step, response.thread_id );
-
 	setRunID( data.step, response.id );
 };
 
-const getEvent = async( type ) => {
+const getEvent = async( type, params = {}) => {
 	const threadID = select( 'quickwp/data' ).getThreadID( type );
-	const route = 'homepage' !== type ? 'get' : 'templates';
+
+	let route = '';
+
+	switch ( type ) {
+	case 'homepage':
+		route = 'homepage';
+		break;
+	case 'templates':
+		route = 'templates';
+		break;
+	default:
+		route = 'get';
+		break;
+	}
 
 	const response = await retryApiFetch({
 		path: addQueryArgs( `${ window.quickwp.api }/${ route }`, {
-			'thread_id': threadID
+			'thread_id': threadID,
+			...params
 		})
 	});
 
@@ -273,12 +285,18 @@ export const generateImages = async() => {
 	setProcessStatus( 'images', true );
 };
 
-export const generateHomepage = async() => {
+export const generateTemplates = async( type ) => {
 	const siteTopic = select( 'quickwp/data' ).getSiteTopic();
 	const siteDescription = select( 'quickwp/data' ).getSiteDescription();
-	const images = select( 'quickwp/data' ).getSelectedImages();
 
-	const imagesAr = images.map( image => ({
+	const images = select( 'quickwp/data' ).getSelectedImages();
+	const activeImageKeyword = select( 'quickwp/data' ).getActiveImageKeyword();
+	const defaultImages = select( 'quickwp/data' ).getImages( activeImageKeyword );
+	const homepage = select( 'quickwp/data' ).getSelectedTemplate();
+
+	const selectedImages = ( ! images.length && defaultImages.length ) ? defaultImages.slice( 0, 10 ) : images;
+
+	let imagesAr = selectedImages.map( image => ({
 		src: image.src.original,
 		alt: image.alt
 	}) );
@@ -286,70 +304,92 @@ export const generateHomepage = async() => {
 	const {
 		setError,
 		setProcessStatus,
-		setHomepage
+		setHomepage,
+		setTemplate
 	} = dispatch( 'quickwp/data' );
 
-	await sendEvent({
-		step: 'homepage',
-		message: `Website topic: ${ siteTopic } | Website description: ${ siteDescription } | Images: ${ JSON.stringify( imagesAr ) }`
-	});
+	let response;
 
-	await awaitEvent( 'homepage', 10000 );
+	if ( 'homepage' === type ) {
+		await sendEvent({
+			step: 'homepage',
+			message: `Website topic: ${ siteTopic } | Website description: ${ siteDescription } | Images: ${ JSON.stringify( imagesAr ) }`,
+			template: homepage
+		});
 
-	const response = await getEvent( 'homepage' );
+		await awaitEvent( 'homepage', 10000 );
+
+		response = await getEvent( 'homepage', {
+			template: homepage
+		});
+	} else {
+		await sendEvent({
+			step: 'templates',
+			message: `Website topic: ${ siteTopic } | Website description: ${ siteDescription }`
+		});
+
+		await awaitEvent( 'templates', 10000 );
+
+		response = await getEvent( 'templates', {
+			images: imagesAr
+		});
+	}
 
 	if ( 'success' !== response?.status ) {
 		setError( true );
 		return;
 	}
 
-	let homepageTemplates = [];
+	if ( 'homepage' === type ) {
+		const homepageTemplate = formatHomepage( response.data );
 
-	response.data.forEach( item => {
-		let homepageTemplate = formatHomepage( item.patterns );
+		setHomepage( homepageTemplate );
+		setProcessStatus( 'homepage', true );
+	} else {
+		let homepageTemplates = [];
 
-		const template = {
-			slug: item.slug,
-			content: homepageTemplate
-		};
+		response.data.forEach( item => {
+			let homepageTemplate = formatHomepage( item.patterns );
 
-		homepageTemplates.push( template );
+			const template = {
+				slug: item.slug,
+				content: homepageTemplate
+			};
+
+			homepageTemplates.push( template );
+		});
+
+		setTemplate( homepageTemplates );
+		setProcessStatus( 'templates', true );
+	}
+};
+
+const importTemplate = async() => {
+	const currentTemplate = select( 'core/edit-site' ).getEditedPostId();
+
+	const { getHomepage } = select( 'quickwp/data' );
+
+	const { editEntityRecord } = dispatch( 'core' );
+
+	const homepage = getHomepage();
+
+	await editEntityRecord( 'postType', 'wp_template', currentTemplate, {
+		'content': homepage
 	});
-
-	setHomepage( homepageTemplates );
-	setProcessStatus( 'homepage', true );
 };
 
 export const saveChanges = async() => {
 	const { __experimentalGetDirtyEntityRecords } = select( 'core' );
 
-	const currentTemplate = select( 'core/edit-site' ).getEditedPostId();
-
-	const {
-		getHomepage,
-		getSelectedHomepage
-	} = select( 'quickwp/data' );
-
-	const {
-		editEntityRecord,
-		saveEditedEntityRecord
-	} = dispatch( 'core' );
+	const { saveEditedEntityRecord } = dispatch( 'core' );
 
 	const { setSaving } = dispatch( 'quickwp/data' );
 
-	const homepage = getSelectedHomepage();
+	setSaving( true );
 
-	const templates = getHomepage();
-
-	const selectedHomepage = templates.find( template => template.slug === homepage );
-
-	editEntityRecord( 'postType', 'wp_template', currentTemplate, {
-		'content': selectedHomepage.content
-	});
+	importTemplate();
 
 	const edits = __experimentalGetDirtyEntityRecords();
-
-	setSaving( true );
 
 	await Promise.all( edits.map( async edit => {
 		await saveEditedEntityRecord( edit.kind, edit.name, edit?.key );
@@ -359,10 +399,72 @@ export const saveChanges = async() => {
 };
 
 const formatHomepage = template => {
+	const slug = window.quickwp.themeSlug;
 	let homepageTemplate = '';
-	homepageTemplate += '<!-- wp:template-part {"slug":"header","theme":"quickwp-theme","tagName":"header","area":"header"} /-->';
+	homepageTemplate += '<!-- wp:template-part {"slug":"header","theme":"' + slug + '","tagName":"header","area":"header"} /-->';
 	homepageTemplate += template;
-	homepageTemplate += '<!-- wp:template-part {"slug":"footer","theme":"quickwp-theme","tagName":"footer","area":"footer"} /-->';
+	homepageTemplate += '<!-- wp:template-part {"slug":"footer","theme":"' + slug + '","tagName":"footer","area":"footer"} /-->';
 
 	return homepageTemplate;
+};
+
+export const recordEvent = async( data = {}) => {
+	if ( ! Boolean( window.quickwp.isGuidedMode ) ) {
+		return;
+	}
+
+	const { setSessionID } = dispatch( 'quickwp/data' );
+	const { getSessionID } = select( 'quickwp/data' );
+
+	const trackingId = getSessionID();
+
+	try {
+		const response = await fetch(
+			'https://api.themeisle.com/tracking/onboarding',
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					_id: trackingId,
+					data: {
+						slug: 'quickwp',
+						// eslint-disable-next-line camelcase
+						license_id: 'free',
+						site: '',
+						...data
+					}
+				})
+			}
+		);
+
+		if ( ! response.ok ) {
+			console.error( `HTTP error! Status: ${ response.status }` );
+			return false;
+		}
+
+		const jsonResponse = await response.json();
+
+		const validCodes = [ 'success', 'invalid' ]; // Add valid codes to this array
+
+		if ( ! validCodes.includes( jsonResponse.code ) ) {
+			return false;
+		}
+
+		if ( 'invalid' === jsonResponse.code ) {
+			console.error( jsonResponse.message );
+			return false;
+		}
+		const responseData = jsonResponse.data;
+
+		if ( responseData?.id && '' === trackingId ) {
+			setSessionID( responseData.id );
+		}
+
+		return responseData.id || false;
+	} catch ( error ) {
+		console.error( error );
+		return false;
+	}
 };

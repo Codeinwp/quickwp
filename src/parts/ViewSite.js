@@ -5,9 +5,15 @@ import { __ } from '@wordpress/i18n';
 
 import apiFetch from '@wordpress/api-fetch';
 
-import { Button } from '@wordpress/components';
+import {
+	Button,
+	Spinner
+} from '@wordpress/components';
 
-import { useDispatch } from '@wordpress/data';
+import {
+	useDispatch,
+	useSelect
+} from '@wordpress/data';
 
 const downloadBlob = ( filename, content, contentType = '' ) => {
 	if ( ! filename || ! content ) {
@@ -28,6 +34,17 @@ const downloadBlob = ( filename, content, contentType = '' ) => {
 
 const ViewSite = () => {
 	const { createErrorNotice } = useDispatch( 'core/notices' );
+
+	const {
+		isSaving
+	} = useSelect( ( select ) => {
+		const { isSaving } = select( 'quickwp/data' );
+
+
+		return {
+			isSaving: isSaving()
+		};
+	}, []);
 
 	const handleExport = async() => {
 		try {
@@ -62,6 +79,14 @@ const ViewSite = () => {
 			createErrorNotice( errorMessage, { type: 'snackbar' });
 		}
 	};
+
+	if ( isSaving ) {
+		return (
+			<div className="flex flex-1 flex-row items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-1 flex-row gap-8 items-center">

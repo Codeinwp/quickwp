@@ -16,6 +16,7 @@ import { useEffect } from '@wordpress/element';
 import { useIsSiteEditorLoading } from './hooks';
 import Loader from './components/Loader';
 import Header from './parts/Header';
+import { recordEvent } from './utils';
 
 const App = () => {
 	const isEditorLoading = useIsSiteEditorLoading();
@@ -45,6 +46,8 @@ const App = () => {
 		if ( hasWelcome ) {
 			toggle( 'core/edit-site', 'welcomeGuide' );
 		}
+
+		recordEvent();
 	}, [ hasWelcome ]);
 
 	const StepControls = currentStep?.view || null;

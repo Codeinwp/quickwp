@@ -62,11 +62,15 @@ class API {
 			'send'      => array(
 				'methods'  => \WP_REST_Server::CREATABLE,
 				'args'     => array(
-					'step'    => array(
+					'step'     => array(
 						'required' => true,
 						'type'     => 'string',
 					),
-					'message' => array(
+					'message'  => array(
+						'required' => false,
+						'type'     => 'string',
+					),
+					'template' => array(
 						'required' => false,
 						'type'     => 'string',
 					),
@@ -114,8 +118,26 @@ class API {
 						'required' => true,
 						'type'     => 'string',
 					),
+					'images'    => array(
+						'required' => false,
+						'type'     => 'array',
+					),
 				),
 				'callback' => array( $this, 'templates' ),
+			),
+			'homepage'  => array(
+				'methods'  => \WP_REST_Server::READABLE,
+				'args'     => array(
+					'thread_id' => array(
+						'required' => true,
+						'type'     => 'string',
+					),
+					'template'  => array(
+						'required' => true,
+						'type'     => 'string',
+					),
+				),
+				'callback' => array( $this, 'homepage' ),
 			),
 		);
 
@@ -138,14 +160,20 @@ class API {
 	public function send( \WP_REST_Request $request ) {
 		$data = $request->get_params();
 
+		$params = array(
+			'step'    => $data['step'],
+			'message' => $data['message'],
+		);
+
+		if ( isset( $data['template'] ) ) {
+			$params['template'] = $data['template'];
+		}
+
 		$request = wp_remote_post(
 			QUICKWP_APP_API . 'wizard/send',
 			array(
 				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
-				'body'    => array(
-					'step'    => $data['step'],
-					'message' => $data['message'],
-				),
+				'body'    => $params,
 			)
 		);
 
@@ -255,6 +283,101 @@ class API {
 	}
 
 	/**
+	 * Get homepage.
+	 * 
+	 * @param \WP_REST_Request $request Request.
+	 * 
+	 * @return \WP_REST_Response
+	 */
+	public function homepage( \WP_REST_Request $request ) {
+		$data = $request->get_params();
+
+		$api_url = QUICKWP_APP_API . 'wizard/get';
+
+		$query_params = array(
+			'thread_id' => $data['thread_id'],
+		);
+
+		$request_url = add_query_arg( $query_params, $api_url );
+
+		$request = wp_safe_remote_get(
+			$request_url,
+			array(
+				'timeout' => 20, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
+			)
+		);
+
+		if ( is_wp_error( $request ) ) {
+			return new \WP_REST_Response( array( 'error' => $request->get_error_message() ), 500 );
+		}
+
+		/** 
+		 * Holds the response as a standard class object
+		 *
+		 * @var \stdClass $response 
+		 */
+		$response = json_decode( wp_remote_retrieve_body( $request ) );
+
+		if ( ! isset( $response->data ) || ! $response->data ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
+		}
+
+		$items = self::process_json_from_response( $response->data );
+
+		if ( ! $items ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error Parsing JSON', 'quickwp' ) ), 500 );
+		}
+
+		self::extract_data( $items );
+
+		$templates = apply_filters( 'quickwp_templates', array() );
+
+		if ( empty( $templates ) || ! isset( $templates['homepage'] ) ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
+		}
+
+		$template = $templates['homepage'][ $data['template'] ];
+
+		$result = array();
+
+		$theme_path = get_stylesheet_directory();
+
+		$patterns = file_get_contents( $template ); //phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown
+
+		if ( ! $patterns ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
+		}
+
+		preg_match_all( '/"slug":"(.*?)"/', $patterns, $matches );
+		$slugs = $matches[1];
+
+		$filtered_patterns = array();
+
+		foreach ( $slugs as $slug ) {   
+			$slug         = str_replace( 'quickwp/', '', $slug );
+			$pattern_path = $theme_path . '/patterns/' . $slug . '.php';
+
+			if ( ! file_exists( $pattern_path ) ) {
+				continue;
+			}
+
+			ob_start();
+			include $pattern_path;
+			$pattern_content = ob_get_clean();
+		
+			$filtered_patterns[] = $pattern_content;
+		}
+
+		return new \WP_REST_Response(
+			array(
+				'status' => 'success',
+				'data'   => implode( '', $filtered_patterns ),
+			),
+			200 
+		);
+	}
+
+	/**
 	 * Get templates.
 	 * 
 	 * @param \WP_REST_Request $request Request.
@@ -300,16 +423,65 @@ class API {
 			return new \WP_REST_Response( array( 'error' => __( 'Error Parsing JSON', 'quickwp' ) ), 500 );
 		}
 
+		self::extract_data( $items );
+
+		$templates = apply_filters( 'quickwp_templates', array() );
+
+		if ( empty( $templates ) || ! isset( $templates['homepage'] ) ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Error', 'quickwp' ) ), 500 );
+		}
+
+		$items = $templates['homepage'];
+
 		$result = array();
 
-		foreach( $items as $item ) {
-			$pattern = self::extract_patterns( $item );
+		$theme_path = get_stylesheet_directory();
+
+		foreach ( $items as $item => $path ) {
+			$pattern = file_get_contents( $path ); //phpcs:ignore WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown
 
 			if ( ! $pattern ) {
 				continue;
 			}
 
-			$result[] = $pattern;
+			preg_match_all( '/"slug":"(.*?)"/', $pattern, $matches );
+			$slugs = $matches[1];
+
+			$filtered_patterns = array();
+
+			foreach ( $slugs as $slug ) {   
+				$slug         = str_replace( 'quickwp/', '', $slug );
+				$pattern_path = $theme_path . '/patterns/' . $slug . '.php';
+
+				if ( ! file_exists( $pattern_path ) ) {
+					continue;
+				}
+
+				// Check if $data param has images and it counts more than 0.
+				if ( isset( $data['images'] ) && count( $data['images'] ) > 0 ) {
+					$images = $data['images'];
+
+					add_filter(
+						'quickwp/image',
+						function () use( $images ) {
+							// Get a random image from the array.
+							$image = $images[ array_rand( $images ) ];
+							return esc_url( $image['src'] );
+						} 
+					);
+				}
+
+				ob_start();
+				include $pattern_path;
+				$pattern_content = ob_get_clean();
+			
+				$filtered_patterns[] = $pattern_content;
+			}
+
+			$result[] = array(
+				'slug'     => $item,
+				'patterns' => implode( '', $filtered_patterns ),
+			);
 		}
 
 		return new \WP_REST_Response(
@@ -369,6 +541,8 @@ class API {
 	 *
 	 * @param array<object> $data Response.
 	 * 
+	 * @throws \Exception Exception in case of invalid JSON.
+	 * 
 	 * @return array<object>|false
 	 */
 	private static function process_json_from_response( $data ) {
@@ -392,8 +566,8 @@ class API {
 			throw new \Exception( 'Invalid JSON' );
 		} catch ( \Exception $e ) {
 			if ( substr( $json_string, 0, 7 ) === '```json' && substr( trim( $json_string ), -3 ) === '```' ) {
-				$cleaned_json = trim( str_replace( [ '```json', '```' ], '', $json_string ) );
-				$json_object = json_decode( $cleaned_json, true );
+				$cleaned_json = trim( str_replace( array( '```json', '```' ), '', $json_string ) );
+				$json_object  = json_decode( $cleaned_json, true );
 
 				if ( is_array( $json_object ) ) {
 					return $json_object;
@@ -405,28 +579,17 @@ class API {
 	}
 
 	/**
-	 * Extract Patterns.
+	 * Extract Data.
 	 * 
 	 * @param array<object> $items Items.
 	 * 
-	 * @return array
+	 * @return void
 	 */
-	private static function extract_patterns( $items ) {
-		if ( ! isset( $items['slug'] ) || ! isset( $items['data'] ) ) {
-			return;
-		}
-
-		$patterns_used = array();
-
-		foreach ( $items['data'] as $item ) {
+	private static function extract_data( $items ) {
+		foreach ( $items as $item ) {
 			if ( ! isset( $item['slug'] ) || ! isset( $item['order'] ) || ! isset( $item['strings'] ) ) {
 				continue;
 			}
-
-			$patterns_used[] = array(
-				'order' => $item['order'],
-				'slug'  => $item['slug'],
-			);
 
 			$strings = $item['strings'];
 
@@ -456,37 +619,5 @@ class API {
 				}
 			}
 		}
-
-		usort(
-			$patterns_used,
-			function ( $a, $b ) {
-				return $a['order'] <=> $b['order'];
-			} 
-		);
-
-		$theme_path = get_stylesheet_directory();
-
-		$filtered_patterns = array();
-
-		foreach ( $patterns_used as $pattern ) {
-			$pattern['slug'] = str_replace( 'quickwp/', '', $pattern['slug'] );
-			
-			$pattern_path = $theme_path . '/patterns/' . $pattern['slug'] . '.php';
-
-			if ( ! file_exists( $pattern_path ) ) {
-				continue;
-			}
-
-			ob_start();
-			include $pattern_path;
-			$pattern_content = ob_get_clean();
-		
-			$filtered_patterns[] = $pattern_content;
-		}
-
-		return array(
-			'slug'     => $items['slug'],
-			'patterns' => implode( '', $filtered_patterns ),
-		);
 	}
 }

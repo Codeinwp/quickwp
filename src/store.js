@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+
 /**
  * WordPress dependencies.
  */
@@ -13,7 +15,8 @@ import STEPS from './steps';
 import {
 	generateColorPalette,
 	generateImages,
-	generateHomepage,
+	generateTemplates,
+	recordEvent,
 	saveChanges
 } from './utils';
 
@@ -30,6 +33,11 @@ const DEFAULT_STATE = {
 			'run_id': null,
 			hasLoaded: false
 		},
+		'templates': {
+			'thread_id': null,
+			'run_id': null,
+			hasLoaded: false
+		},
 		'homepage': {
 			'thread_id': null,
 			'run_id': null,
@@ -41,10 +49,12 @@ const DEFAULT_STATE = {
 	imageKeywords: [],
 	activeImageKeyword: null,
 	selectedImages: [],
-	homepage: [],
-	selectedHomepage: null,
+	templates: [],
+	selectedTemplate: null,
+	homepage: null,
 	siteTopic: '',
 	siteDescription: '',
+	sessionID: '',
 	isSavimg: false,
 	hasError: false
 };
@@ -89,6 +99,13 @@ const actions = {
 		return ({ dispatch, select }) => {
 			const current = select.getStep();
 
+			const stepIndex = STEPS.findIndex( step => current.value === step.value );
+
+			recordEvent({
+				step_id: stepIndex + 1,
+				step_status: 'completed'
+			});
+
 			switch ( current.value ) {
 			case 'site_topic':
 				generateColorPalette();
@@ -96,12 +113,13 @@ const actions = {
 			case 'site_description':
 				generateImages();
 				break;
-			case 'color_palette':
-				break;
 			case 'image_suggestions':
-				generateHomepage();
+				generateTemplates( 'templates' );
 				break;
 			case 'frontpage_template':
+				generateTemplates( 'homepage' );
+				break;
+			case 'color_palette':
 				saveChanges();
 				break;
 			}
@@ -169,16 +187,28 @@ const actions = {
 			image
 		};
 	},
+	setTemplate( templates ) {
+		return {
+			type: 'SET_TEMPLATE',
+			templates
+		};
+	},
+	setSelectedTemplate( selectedTemplate ) {
+		return {
+			type: 'SET_SELECTED_TEMPLATE',
+			selectedTemplate
+		};
+	},
 	setHomepage( homepage ) {
 		return {
 			type: 'SET_HOMEPAGE',
 			homepage
 		};
 	},
-	setSelectedHomepage( selectedHomepage ) {
+	setSessionID( sessionID ) {
 		return {
-			type: 'SET_SELECTED_HOMEPAGE',
-			selectedHomepage
+			type: 'SET_SESSION_ID',
+			sessionID
 		};
 	},
 	setError( hasError ) {
@@ -286,15 +316,20 @@ const store = createReduxStore( 'quickwp/data', {
 					( image ) => image !== action.image
 				)
 			};
+		case 'SET_TEMPLATE':
+			return {
+				...state,
+				templates: action.templates
+			};
+		case 'SET_SELECTED_TEMPLATE':
+			return {
+				...state,
+				selectedTemplate: action.selectedTemplate
+			};
 		case 'SET_HOMEPAGE':
 			return {
 				...state,
 				homepage: action.homepage
-			};
-		case 'SET_SELECTED_HOMEPAGE':
-			return {
-				...state,
-				selectedHomepage: action.selectedHomepage
 			};
 		case 'SET_THREAD_ID':
 			return {
@@ -317,6 +352,11 @@ const store = createReduxStore( 'quickwp/data', {
 						'run_id': action.runID
 					}
 				}
+			};
+		case 'SET_SESSION_ID':
+			return {
+				...state,
+				sessionID: action.sessionID
 			};
 		case 'SET_PROCESS_STATUS':
 			return {
@@ -361,11 +401,17 @@ const store = createReduxStore( 'quickwp/data', {
 		getSelectedImages( state ) {
 			return state.selectedImages;
 		},
+		getTemplate( state ) {
+			return state.templates;
+		},
+		getSelectedTemplate( state ) {
+			return state.selectedTemplate;
+		},
 		getHomepage( state ) {
 			return state.homepage;
 		},
-		getSelectedHomepage( state ) {
-			return state.selectedHomepage;
+		getSessionID( state ) {
+			return state.sessionID;
 		},
 		hasError( state ) {
 			return state.hasError;
