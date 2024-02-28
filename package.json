@@ -1,0 +1,49 @@
+{
+	"name": "quickwp",
+	"version": "1.0.0",
+	"description": "Build websites quickly.",
+	"scripts": {
+		"build": "npm-run-all build:*",
+		"build:backend": "wp-scripts build src/index.js --output-path=build/backend --output-filename=index.js",
+		"build:frontend": "wp-scripts build src/frontend/index.js --output-path=build/frontend --output-filename=frontend.js",
+		"check-engines": "wp-scripts check-engines",
+		"check-licenses": "wp-scripts check-licenses",
+		"format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"lint:md:docs": "wp-scripts lint-md-docs",
+		"lint:pkg-json": "wp-scripts lint-pkg-json",
+		"packages-update": "wp-scripts packages-update",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"start": "npm-run-all --parallel start:*",
+		"start:backend": "wp-scripts start src/index.js --output-path=build/backend --output-filename=index.js",
+		"start:frontend": "wp-scripts start src/frontend/index.js --output-path=build/frontend --output-filename=frontend.js",
+		"test:e2e": "wp-scripts test-e2e",
+		"test:unit": "wp-scripts test-unit-js",
+		"dist": "bash bin/dist.sh"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Codeinwp/quickwp.git"
+	},
+	"author": "ThemeIsle <friends@themeisle.com>",
+	"license": "GPL-3.0-or-later",
+	"bugs": {
+		"url": "https://github.com/Codeinwp/quickwp/issues"
+	},
+	"homepage": "https://github.com/Codeinwp/quickwp#readme",
+	"devDependencies": {
+		"@wordpress/scripts": "^26.19.0",
+		"eslint-config-wordpress": "^2.0.0",
+		"npm-run-all": "^4.1.5",
+		"simple-git-hooks": "^2.9.0",
+		"tailwindcss": "^3.4.0"
+	},
+	"simple-git-hooks": {
+		"pre-commit": "npm run lint:js && composer run-script lint && composer run-script phpstan"
+	},
+	"dependencies": {
+		"@wordpress/icons": "^9.39.0",
+		"classnames": "^2.3.2"
+	}
+}

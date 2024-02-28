@@ -1,0 +1,29 @@
+name: Test JS
+
+on:
+    pull_request:
+        types: [opened, synchronize, ready_for_review]
+
+jobs:
+    run:
+        runs-on: ubuntu-latest
+        if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+        strategy:
+            matrix:
+                node-version: [20.x]
+        name: JS Test
+        steps:
+            - uses: actions/checkout@master
+              with:
+                  persist-credentials: false
+            - name: Build files using ${{ matrix.node-version }}
+              uses: actions/setup-node@v1
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - name: Lint js files
+              run: |
+                  npm install -g npm
+                  npm ci
+                  npm run lint:js
+              env:
+                  CI: true

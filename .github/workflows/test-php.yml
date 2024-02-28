@@ -1,0 +1,62 @@
+name: Test PHP
+
+on:
+    pull_request:
+        types: [opened, synchronize, ready_for_review]
+
+jobs:
+    phplint:
+        name: PHPLint
+        runs-on: ubuntu-latest
+        if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+        steps:
+            - name: Setup PHP version
+              uses: shivammathur/setup-php@v1
+              with:
+                  php-version: '7.4'
+                  extensions: simplexml
+            - name: Checkout source code
+              uses: actions/checkout@v2
+            - name: Get Composer Cache Directory
+              id: composer-cache
+              run: |
+                  echo "::set-output name=dir::$(composer config cache-files-dir)"
+            - name: Setup Composer cache
+              uses: actions/cache@v1
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-composer-
+            - name: Install composer
+              run: composer install --prefer-dist --no-progress --no-suggest
+            - name: Run PHPCS
+              run: composer run lint
+
+    phpstan:
+        name: PHPStan
+        runs-on: ubuntu-latest
+        if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+        steps:
+            - name: Setup PHP version
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '7.4'
+                  extensions: simplexml, mysql
+            - name: Checkout source code
+              uses: actions/checkout@v2
+            - name: Get Composer Cache Directory
+              id: composer-cache
+              run: |
+                  echo "::set-output name=dir::$(composer config cache-files-dir)"
+            - name: Setup Composer cache
+              uses: actions/cache@v1
+              with:
+                  path: ${{ steps.composer-cache.outputs.dir }}
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-composer-
+            - name: Install composer
+              run: composer install --prefer-dist --no-progress --no-suggest
+            - name: PHPStan Static Analysis
+              run: composer phpstan
